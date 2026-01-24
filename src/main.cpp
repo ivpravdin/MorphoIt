@@ -1,11 +1,8 @@
-// Include the headers
-#include "blocks/c_code_generator.h"
-#include "builder/static_var.h"
-#include "builder/dyn_var.h"
 #include <iostream>
 #include <fstream>
 #include <iterator>
 #include <filesystem>
+#include <cstring>
 
 extern "C"
 {
@@ -23,6 +20,10 @@ extern "C"
   varray_instruction *program_getbytecode(program *p);
   objectfunction *program_getglobalfn(program *p);
 }
+
+#include "blocks/c_code_generator.h"
+#include "builder/static_var.h"
+#include "builder/dyn_var.h"
 
 // Include the BuildIt types
 using builder::dyn_var;
