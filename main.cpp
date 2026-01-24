@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#include <filesystem>
 
 extern "C"
 {
@@ -125,12 +126,22 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t bytecode[], const uint
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        cerr << "Expected 1 argument with a path to a morpho src file, got " << argc - 1 << ". Exiting." << endl;
+    bool hexdump = false;
+    char *src_file_path = NULL;
+    if (argc > 3 or argc == 1) {
+        cerr << "Usage: " 
+             << filesystem::path(argv[0]).filename().string() 
+             << " [-D] MORPHO_FILE" << endl;
         return EXIT_FAILURE;
+    } else if (argc == 3 and strcmp(argv[1], "-D") == 0) {
+        hexdump = true;
+        src_file_path = argv[2];
+    }
+    else {
+        src_file_path = argv[1];
     }
 
-    char *src_file_path = argv[1];
+    assert(src_file_path);
 
     ifstream src_file(src_file_path, ios::in);
     if (not src_file.is_open()) {
@@ -138,7 +149,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    std::string src(std::istreambuf_iterator<char>{src_file}, {});
+    string src(std::istreambuf_iterator<char>{src_file}, {});
 
 	builder::builder_context context;
 
@@ -171,9 +182,21 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        auto ast = context.extract_function_ast(morpho_vm, "main", ninstructions, bytecode, consts);
-        print_wrapper_code(std::cout);
-        block::c_code_generator::generate_code(ast, std::cout, 0);
+        if (hexdump) {
+            for (int i = 0; i < ninstructions; i++) {
+                cout << "0x"
+                     << std::setfill('0')
+                     << std::setw(sizeof(*bytecode) * 2)
+                     << std::hex
+                     << bytecode[i] << "\n";
+            }
+        }
+        else {
+            auto ast = context.extract_function_ast(morpho_vm, "main", ninstructions, bytecode, consts);
+            print_wrapper_code(std::cout);
+            block::c_code_generator::generate_code(ast, std::cout, 0);
+        }
+
     } else {
         printf("Compilation error [%s]: %s\n", err.id, err.msg);
     }
