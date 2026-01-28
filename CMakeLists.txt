@@ -11,6 +11,8 @@ project(morphoit)
 
 set(BUILDIT_PATH "${CMAKE_SOURCE_DIR}/buildit")
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23")
+
 include(ExternalProject)
 
 # Build the buildit subproject using make
@@ -74,10 +76,10 @@ find_file(MORPHO_HEADER
           HINTS 
           /usr/local/include/
           /usr/local/include/morpho
-          /opt/homebrew/include/
-          /opt/homebrew/include/morpho
-          /home/linuxbrew/.linuxbrew/include/
-          /home/linuxbrew/.linuxbrew/include/morpho
+        #   /opt/homebrew/include/
+        #   /opt/homebrew/include/morpho
+        #   /home/linuxbrew/.linuxbrew/include/
+        #   /home/linuxbrew/.linuxbrew/include/morpho
           "C:/Program Files/Morpho/include/morpho"
           )
 
