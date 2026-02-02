@@ -11,7 +11,7 @@ project(morphoit)
 
 set(BUILDIT_PATH "${CMAKE_SOURCE_DIR}/buildit")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -Wfatal-errors")
 
 include(ExternalProject)
 

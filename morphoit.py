@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import subprocess as sp
 import sys
@@ -33,7 +33,7 @@ parser.add_argument('-v', '--verbose', action='store_true')
 
 args = parser.parse_args()
 
-transpilerpath = Path('main')
+transpilerpath = Path('morphoit')
 if args.transpilation_executable is not None:
     transpilerpath = Path(args.transpilation_executable)
 transpilerpath = transpilerpath.resolve()
@@ -91,7 +91,7 @@ if ircodepath is not None:
     with open(str(ircodepath), "wb") as file:
         file.write(trans_proc.stdout)
 
-comp_cmd = ['cc', '-x', 'c', '-O3', '-','-o', str(binpath)]
+comp_cmd = ['cc', '-x', 'c', '-Wno-incompatible-pointer-types', '-O3', '-','-o', str(binpath)]
 if args.verbose:
     print('Compilation command:', *comp_cmd, file=sys.stderr)
 comp_proc = sp.run(comp_cmd, input=trans_proc.stdout)

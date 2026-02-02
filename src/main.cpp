@@ -4,23 +4,6 @@
 #include <filesystem>
 #include <cstring>
 
-extern "C"
-{
-  // Hackily include bits of morpho we need 
-  #include "morpho.h"
-  #define cmplx_h     // Suppress headers that don't play nice with C++
-  #define platform_h  //
-  #include "program.h"
-
-  #include "varray.h" // Define a missing type that's protected from casual use
-  typedef unsigned int instruction;
-  DECLARE_VARRAY(instruction, instruction);
-
-  // Prototypes for a couple of 
-  varray_instruction *program_getbytecode(program *p);
-  objectfunction *program_getglobalfn(program *p);
-}
-
 #include "blocks/c_code_generator.h"
 #include "builder/static_var.h"
 #include "builder/dyn_var.h"
@@ -29,61 +12,149 @@ extern "C"
 using builder::dyn_var;
 using builder::static_var;
 
-using namespace std;
+extern "C"
+{
+    #define cmplx_h
+    #define platform_h
+    #include <morpho/vm.h>
+    #include <morpho/classes.h>
+    #include <morpho/compile.h>
+    #include <morpho/profile.h>
+    #include <morpho/program.h>
+    #include <morpho/morpho.h>
 
-/** Decode the opcode */
-#define DECODE_OP(x) (x & 0xff)
-
-/** Decode operand A */
-#define DECODE_A(x) ((x>>8) & (0xff))
-/** Decode operand B */
-#define DECODE_B(x) ((x>>16) & (0xff))
-/** Decode operand C */
-#define DECODE_C(x) ((x>>24) & (0xff))
-
-/** Decode long operand Bx */
-#define DECODE_Bx(x) ((x>>16) & (0xffff))
-
-/** Decode signed long operand Bx */
-#define DECODE_sBx(x) ((short) ((x>>16) & (0xffff)))
-
-dyn_var<void(int)> print(builder::as_global("print"));
-
-static void print_wrapper_code(std::ostream &oss) {
-	oss << "#include <stdio.h>\n";
-	oss << "#include <stdlib.h>\n";
-    oss << "#include <stdbool.h>\n";
-	oss << "void print(int x) {printf(\"%d\\n\", x);}\n";
+    // Prototypes for a couple of 
+    varray_instruction *program_getbytecode(program *p);
+    objectfunction *program_getglobalfn(program *p);
 }
 
-static dyn_var<int> morpho_vm(const int n, const uint32_t bytecode[], const uint32_t consts[]) {
-    //static_var<uint32_t> consts[] = {0, 1, 30000};
-    dyn_var<int32_t[255]> reg = {0};
-    dyn_var<int32_t[255]> globals = {0};
-    dyn_var<int32_t> left, right;
+#include "value.h"
+#include "builtin.h"
+
+static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunction *globalfn) {
+    static_var<uint32_t> consts[] = {0, 1, 30000};
+    dyn_var<value[255]> reg;
+    dyn_var<value> left, right;
+    
+    dyn_var<value[100]> globals;
     
     static_var<int32_t> a, b, c;
     static_var<int32_t> bc;
     static_var<int32_t> pc = 0;
 
     while (pc < n) {
-        bc = bytecode[pc];
+        bc = instructions[pc];
         switch (DECODE_OP(bc)) {
-            case 0x0: // NOP
+            case OP_NOP:
                 break;
-            case 0x1: // MOV
+
+            case OP_MOV:
                 a=DECODE_A(bc); b=DECODE_B(bc);
                 reg[a] = reg[b];
                 break;
-            case 0x2: // LCT
+
+            case OP_LCT:
                 a=DECODE_A(bc); b=DECODE_Bx(bc);
-                reg[a] = consts[b];
+                reg[a] = globalfn->konst.data[b];
                 break;
-            case 0x3: // ADD
+
+            case OP_ADD:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
-                reg[a] = reg[b] + reg[c];
+                left = reg[b], right = reg[c];
+                if (MORPHO_ISFLOAT(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) + X_MORPHO_GETFLOATVALUE(right));
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) + X_MORPHO_GETINTEGERVALUE(right));
+                        break;
+                    }
+                } else if (MORPHO_ISINTEGER(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) + X_MORPHO_GETFLOATVALUE(right));
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) + X_MORPHO_GETINTEGERVALUE(right));
+                        break;
+                    }
+                } else if (MORPHO_ISSTRING(left) && MORPHO_ISSTRING(right)) {
+                    reg[a] = object_concatenatestring(left, right);
+                }
                 break;
-            case 0xA: //LT
+
+            case OP_SUB:
+                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
+                left = reg[b];
+                right = reg[c];
+
+                if (MORPHO_ISFLOAT(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) - MORPHO_GETFLOATVALUE(right));
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) - X_MORPHO_GETINTEGERVALUE(right));
+                        break;
+                    }
+                } else if (MORPHO_ISINTEGER(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) - MORPHO_GETFLOATVALUE(right));
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) - X_MORPHO_GETINTEGERVALUE(right));
+                        break;
+                    }
+                }
+                break;
+
+            case OP_MUL:
+                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
+                left = reg[b];
+                right = reg[c];
+
+                if (MORPHO_ISFLOAT(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) * MORPHO_GETFLOATVALUE(right));
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) * X_MORPHO_GETINTEGERVALUE(right));
+                        break;
+                    }
+                } else if (MORPHO_ISINTEGER(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) * MORPHO_GETFLOATVALUE(right));
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) * X_MORPHO_GETINTEGERVALUE(right));
+                        break;
+                    }
+                }
+                break;
+            
+            case OP_DIV:
+                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
+                left = reg[b];
+                right = reg[c];
+
+                if (MORPHO_ISFLOAT(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) / MORPHO_GETFLOATVALUE(right));
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) / X_MORPHO_GETINTEGERVALUE(right));
+                        break;
+                    }
+                } else if (MORPHO_ISINTEGER(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) / MORPHO_GETFLOATVALUE(right));
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) / X_MORPHO_GETINTEGERVALUE(right));
+                        break;
+                    }
+                }
+                break;
+
+            case OP_LT: //LT
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
                 right = reg[c];
@@ -113,9 +184,13 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t bytecode[], const uint
             case 0x22: // PRINT
                 a=DECODE_A(bc);
                 left=reg[a];
-                print(left);
+                if (MORPHO_ISINTEGER(left)) {
+                    printint( X_MORPHO_GETINTEGERVALUE(left) );
+                } else if (MORPHO_ISFLOAT(left)) {
+                    printfloat( X_MORPHO_GETFLOATVALUE(left) );
+                }
                 break;
-            case 0x24: // END
+            case OP_END: // END
                 return 0;
             default:
                 return 1;
@@ -130,9 +205,9 @@ int main(int argc, char* argv[]) {
     bool hexdump = false;
     char *src_file_path = NULL;
     if (argc > 3 or argc == 1) {
-        cerr << "Usage: " 
-             << filesystem::path(argv[0]).filename().string() 
-             << " [-D] MORPHO_FILE" << endl;
+        std::cerr << "Usage: " 
+             << std::filesystem::path(argv[0]).filename().string() 
+             << " [-D] MORPHO_FILE" << std::endl;
         return EXIT_FAILURE;
     } else if (argc == 3 and strcmp(argv[1], "-D") == 0) {
         hexdump = true;
@@ -144,13 +219,13 @@ int main(int argc, char* argv[]) {
 
     assert(src_file_path);
 
-    ifstream src_file(src_file_path, ios::in);
+    std::ifstream src_file(src_file_path, std::ios::in);
     if (not src_file.is_open()) {
-        cerr << "Could not open '" << src_file_path << "'. Exiting." << endl;
+        std::cerr << "Could not open '" << src_file_path << "'. Exiting." << std::endl;
         return EXIT_FAILURE;
     }
 
-    string src(std::istreambuf_iterator<char>{src_file}, {});
+    std::string src(std::istreambuf_iterator<char>{src_file}, {});
 
 	builder::builder_context context;
 
@@ -170,22 +245,9 @@ int main(int argc, char* argv[]) {
         uint32_t *bytecode = (uint32_t *) code->data;
         int ninstructions = code->count;
 
-        int nconst = globalfn->konst.count; 
-        uint32_t consts[255]; // Must be static in length
-        for (int i=0; i<nconst; i++) {
-            if (MORPHO_ISINTEGER(globalfn->konst.data[i])) {
-                consts[i]=MORPHO_GETINTEGERVALUE(globalfn->konst.data[i]);
-            } else {
-                consts[i]=0;
-                printf("Warning: constant %i '", i);
-                morpho_printvalue(NULL, globalfn->konst.data[i]);
-                printf("' will be ignored.\n");
-            }
-        }
-
         if (hexdump) {
             for (int i = 0; i < ninstructions; i++) {
-                cout << "0x"
+                std::cout << "0x"
                      << std::setfill('0')
                      << std::setw(sizeof(*bytecode) * 2)
                      << std::hex
@@ -193,7 +255,7 @@ int main(int argc, char* argv[]) {
             }
         }
         else {
-            auto ast = context.extract_function_ast(morpho_vm, "main", ninstructions, bytecode, consts);
+            auto ast = context.extract_function_ast(morpho_vm, "main", ninstructions, bytecode, globalfn);
             print_wrapper_code(std::cout);
             block::c_code_generator::generate_code(ast, std::cout, 0);
         }

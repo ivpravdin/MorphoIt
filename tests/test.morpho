@@ -1,1 +1,4 @@
-for (var i=0; i<5; i+=1) print i
+var x = 10.5;
+var y = 10;
+var z = x + y;
+print(z);
