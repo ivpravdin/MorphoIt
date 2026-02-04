@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <cstring>
 
+#include "morpho_includes.h"
+
 #include "blocks/c_code_generator.h"
 #include "builder/static_var.h"
 #include "builder/dyn_var.h"
@@ -12,21 +14,6 @@
 using builder::dyn_var;
 using builder::static_var;
 
-extern "C"
-{
-    #define cmplx_h
-    #define platform_h
-    #include <morpho/vm.h>
-    #include <morpho/classes.h>
-    #include <morpho/compile.h>
-    #include <morpho/profile.h>
-    #include <morpho/program.h>
-    #include <morpho/morpho.h>
-
-    // Prototypes for a couple of 
-    varray_instruction *program_getbytecode(program *p);
-    objectfunction *program_getglobalfn(program *p);
-}
 
 #include "value.h"
 #include "builtin.h"
