@@ -5,20 +5,22 @@ import sys
 import argparse
 from pathlib import Path
 
-DEFAULT=1
+USE_DEFAULT_FILENAME=1
 EXE_EXTENSION = '.exe' if sys.platform == 'win32' else '.bin'
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("FILE",
-                    help="path to the Morpho source file to be transpiled") #; '-' for stdin")
+                    help="path to the Morpho source file to be transpiled;" 
+                         "'-' for stdin, which will cause FILE to be treated"
+                         "as _stdin.morpho for default filename purposes")
 parser.add_argument("-o", "--output",
-                    help="path to the produced binary. Defaults to FILE.bin "
+                    help="path to the produced binary. Defaults to FILE.bin"
                     "or FILE.exe")
 parser.add_argument("-T", "--transpilation-executable", 
                     help="path to the Morpho to C transpiler")
 parser.add_argument("-t", "--transpilation-file", 
-                    nargs='?', const=DEFAULT,
+                    nargs='?', const=USE_DEFAULT_FILENAME,
                     help="location to save the result of the transpilation;" \
                     " by default it is not saved at all. If this option is " \
                     "present with no argument provided, defaults to FILE.c")
@@ -34,6 +36,7 @@ parser.add_argument('-v', '--verbose', action='store_true')
 args = parser.parse_args()
 
 transpilerpath = Path('build/morphoit')
+# the morphoit binary
 if args.transpilation_executable is not None:
     transpilerpath = Path(args.transpilation_executable)
 transpilerpath = transpilerpath.resolve()
@@ -44,19 +47,31 @@ if not transpilerpath.is_file():
           file=sys.stderr)
     exit(1)
 
-srcpath = Path(args.FILE).resolve()
+# .morpho file to be transpiled
+if args.FILE != "-":
+    srcpath = Path(args.FILE).resolve()
+    basefilename = Path(srcpath.name)
 
-binpath = Path(srcpath.name + EXE_EXTENSION)
+    if not srcpath.is_file():
+        print('No such file \'' + args.FILE + '\', exiting.', file=sys.stderr)
+        exit(1)
+else:
+    srcpath = args.FILE
+    basefilename = '_stdin.morpho'
+
+# binary produced by compiling transpiled C code
+binpath = Path(basefilename + EXE_EXTENSION)
 if args.output is not None:
     binpath = Path(args.output)
 binpath = binpath.resolve()
 
+# .c file that is the result of the transpilation
 ircodepath = None
 if args.transpilation_file is not None:
-    if args.transpilation_file != DEFAULT:
-        ircodepath = Path(args.transpilation_file)
+    if args.transpilation_file == USE_DEFAULT_FILENAME:
+        ircodepath = Path(basefilename + '.c')
     else:
-        ircodepath = Path(srcpath.name + '.c')
+        ircodepath = Path(args.transpilation_file)
     ircodepath = ircodepath.resolve()
 
 if args.verbose:
@@ -66,9 +81,6 @@ if args.verbose:
     print("Transpiled code path:", ircodepath, file=sys.stderr)
     print("Args Object:", args, file=sys.stderr)
 
-if not srcpath.is_file():
-    print('No such file \'' + args.FILE + '\', exiting.', file=sys.stderr)
-    exit(1)
 
 
 trans_cmd = [str(transpilerpath), str(srcpath)]

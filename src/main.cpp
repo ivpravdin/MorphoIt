@@ -256,7 +256,9 @@ int main(int argc, char* argv[]) {
     if (argc > 3 or argc == 1) {
         std::cerr << "Usage: " 
              << std::filesystem::path(argv[0]).filename().string() 
-             << " [-D] MORPHO_FILE" << std::endl;
+             << " [-D] MORPHO_FILE\n" 
+             << "(use '-' for stdin)"
+             << std::endl;
         return EXIT_FAILURE;
     } else if (argc == 3 and strcmp(argv[1], "-D") == 0) {
         hexdump = true;
@@ -268,13 +270,18 @@ int main(int argc, char* argv[]) {
 
     assert(src_file_path);
 
-    std::ifstream src_file(src_file_path, std::ios::in);
-    if (not src_file.is_open()) {
-        std::cerr << "Could not open '" << src_file_path << "'. Exiting." << std::endl;
-        return EXIT_FAILURE;
+    std::istream *input = &std::cin;
+    std::ifstream file;
+    if (strcmp(src_file_path, "-") != 0) {
+        file = std::ifstream(src_file_path, std::ios::in);
+        if (not file.is_open()) {
+            std::cerr << "Could not open '" << src_file_path << "'. Exiting." << std::endl;
+            return EXIT_FAILURE;
+        }
+        input = &file;
     }
 
-    std::string src(std::istreambuf_iterator<char>{src_file}, {});
+    std::string src(std::istreambuf_iterator<char>{*input}, {});
 
 	builder::builder_context context;
 
