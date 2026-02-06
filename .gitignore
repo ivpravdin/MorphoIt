@@ -2,3 +2,4 @@ cscope.*
 a.out
 main
 build
+.DS_Store
