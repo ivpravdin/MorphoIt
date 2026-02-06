@@ -33,7 +33,7 @@ parser.add_argument('-v', '--verbose', action='store_true')
 
 args = parser.parse_args()
 
-transpilerpath = Path('morphoit')
+transpilerpath = Path('build/morphoit')
 if args.transpilation_executable is not None:
     transpilerpath = Path(args.transpilation_executable)
 transpilerpath = transpilerpath.resolve()
