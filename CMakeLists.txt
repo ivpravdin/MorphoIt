@@ -3,6 +3,10 @@
 #-------------------------------------------------------------------------------
 
 cmake_minimum_required(VERSION 3.13)
+
+set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_CXX_COMPILER "g++")
+
 project(morphoit)
 
 #-------------------------------------------------------------------------------
@@ -12,8 +16,6 @@ project(morphoit)
 set(BUILDIT_PATH "${CMAKE_SOURCE_DIR}/buildit")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -Wfatal-errors")
-
-set(CMAKE_C_COMPILER "gcc")
 
 include(ExternalProject)
 
