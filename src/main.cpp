@@ -16,12 +16,12 @@ extern "C"
 {
     #define cmplx_h
     #define platform_h
-    #include <morpho/vm.h>
-    #include <morpho/classes.h>
-    #include <morpho/compile.h>
-    #include <morpho/profile.h>
-    #include <morpho/program.h>
-    #include <morpho/morpho.h>
+    #include <vm.h>
+    #include <classes.h>
+    #include <compile.h>
+    #include <profile.h>
+    #include <program.h>
+    #include <morpho.h>
 
     // Prototypes for a couple of 
     varray_instruction *program_getbytecode(program *p);
@@ -45,6 +45,9 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
     while (pc < n) {
         bc = instructions[pc];
         switch (DECODE_OP(bc)) {
+            /* OPCODE: NO-OP
+             * [COMPLETE]
+             */
             case OP_NOP:
                 break;
 
@@ -57,7 +60,12 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                 a=DECODE_A(bc); b=DECODE_Bx(bc);
                 reg[a] = globalfn->konst.data[b];
                 break;
-
+            /* OPCODE: ADD
+             * 
+             * To-Do:
+             *      - Finish string concatenation?
+             *      - Object operator redirection
+             */
             case OP_ADD:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b], right = reg[c];
@@ -81,23 +89,26 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                     reg[a] = object_concatenatestring(left, right);
                 }
                 break;
-
+            /* OPCODE: SUBTRACT
+             * 
+             * To-Do:
+             *      - Object operator redirection
+             */
             case OP_SUB:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
-                left = reg[b];
-                right = reg[c];
+                left = reg[b], right = reg[c];
 
                 if (MORPHO_ISFLOAT(left)) {
                     if (MORPHO_ISFLOAT(right)) {
-                        reg[a] = MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) - MORPHO_GETFLOATVALUE(right));
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) - X_MORPHO_GETFLOATVALUE(right));
                         break;
                     } else if (MORPHO_ISINTEGER(right)) {
-                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) - X_MORPHO_GETINTEGERVALUE(right));
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) - X_MORPHO_GETINTEGERVALUE(right));
                         break;
                     }
                 } else if (MORPHO_ISINTEGER(left)) {
                     if (MORPHO_ISFLOAT(right)) {
-                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) - MORPHO_GETFLOATVALUE(right));
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) - X_MORPHO_GETFLOATVALUE(right));
                         break;
                     } else if (MORPHO_ISINTEGER(right)) {
                         reg[a] = X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) - X_MORPHO_GETINTEGERVALUE(right));
@@ -105,23 +116,26 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                     }
                 }
                 break;
-
+            /* OPCODE: MULTIPLY
+             * 
+             * To-Do:
+             *      - Object operator redirection
+             */
             case OP_MUL:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
-                left = reg[b];
-                right = reg[c];
+                left = reg[b], right = reg[c];
 
                 if (MORPHO_ISFLOAT(left)) {
                     if (MORPHO_ISFLOAT(right)) {
-                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) * MORPHO_GETFLOATVALUE(right));
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) * X_MORPHO_GETFLOATVALUE(right));
                         break;
                     } else if (MORPHO_ISINTEGER(right)) {
-                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) * X_MORPHO_GETINTEGERVALUE(right));
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) * X_MORPHO_GETINTEGERVALUE(right));
                         break;
                     }
                 } else if (MORPHO_ISINTEGER(left)) {
                     if (MORPHO_ISFLOAT(right)) {
-                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) * MORPHO_GETFLOATVALUE(right));
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) * X_MORPHO_GETFLOATVALUE(right));
                         break;
                     } else if (MORPHO_ISINTEGER(right)) {
                         reg[a] = X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) * X_MORPHO_GETINTEGERVALUE(right));
@@ -129,23 +143,26 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                     }
                 }
                 break;
-            
+            /* OPCODE: DIVIDE
+             * 
+             * To-Do:
+             *      - Object operator redirection
+             */
             case OP_DIV:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
-                left = reg[b];
-                right = reg[c];
+                left = reg[b], right = reg[c];
 
                 if (MORPHO_ISFLOAT(left)) {
                     if (MORPHO_ISFLOAT(right)) {
-                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) / MORPHO_GETFLOATVALUE(right));
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) / X_MORPHO_GETFLOATVALUE(right));
                         break;
                     } else if (MORPHO_ISINTEGER(right)) {
-                        reg[a] = X_MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) / X_MORPHO_GETINTEGERVALUE(right));
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) / X_MORPHO_GETINTEGERVALUE(right));
                         break;
                     }
                 } else if (MORPHO_ISINTEGER(left)) {
                     if (MORPHO_ISFLOAT(right)) {
-                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) / MORPHO_GETFLOATVALUE(right));
+                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) / X_MORPHO_GETFLOATVALUE(right));
                         break;
                     } else if (MORPHO_ISINTEGER(right)) {
                         reg[a] = X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) / X_MORPHO_GETINTEGERVALUE(right));
@@ -153,7 +170,39 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                     }
                 }
                 break;
+            /* OPCODE: POW
+             * 
+             * To-Do:
+             *      - Verify implementation?
+             *      - Object operator redirection
+             */
+            // case OP_POW: //POW
+            //     a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
+            //     left = reg[b];
+            //     right = reg[c];
 
+            //     if (MORPHO_ISFLOAT(left)) {
+            //         if (MORPHO_ISFLOAT(right)) {
+            //             reg[a] = MORPHO_FLOAT( pow(MORPHO_GETFLOATVALUE(left), MORPHO_GETFLOATVALUE(right)) );
+            //             break;
+            //         } else if (MORPHO_ISINTEGER(right)) {
+            //             reg[a] = MORPHO_FLOAT( pow(MORPHO_GETFLOATVALUE(left), (double) MORPHO_GETINTEGERVALUE(right)) );
+            //             break;
+            //         }
+            //     } else if (MORPHO_ISINTEGER(left)) {
+            //         if (MORPHO_ISFLOAT(right)) {
+            //             reg[a] = MORPHO_FLOAT( pow((double) MORPHO_GETINTEGERVALUE(left), MORPHO_GETFLOATVALUE(right)) );
+            //             break;
+            //         } else if (MORPHO_ISINTEGER(right)) {
+            //             reg[a] = MORPHO_FLOAT( pow((double) MORPHO_GETINTEGERVALUE(left), (double) MORPHO_GETINTEGERVALUE(right)) );
+            //             break;
+            //         }
+            //     }
+
+            //     // OPREDIRECT(powselector, powrselector, a);
+
+            //     // OPERROR("Exponentiate")
+            //     break;
             case OP_LT: //LT
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
@@ -161,27 +210,27 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
 
                 reg[a] = (left<right);
                 break;
-            case 0xD: // B
+            case OP_B: // B
                 b=DECODE_sBx(bc);
                 pc+=b;
                 break;
-            case 0xF: // BIFF
+            case OP_BIFF: // BIFF
                 a=DECODE_A(bc);
                 left=reg[a];
 
                 if (!left) pc+=DECODE_sBx(bc);
                 break;
-            case 0x1D: // LGL
+            case OP_LGL: // LGL
                 a=DECODE_A(bc);
                 b=DECODE_Bx(bc);
                 reg[a]=globals[b];
                 break;
-            case 0x1E: // SGL
+            case OP_SGL: // SGL
                 a=DECODE_A(bc);
                 b=DECODE_Bx(bc);
                 globals[b]=reg[a];
                 break;
-            case 0x22: // PRINT
+            case OP_PRINT: // PRINT
                 a=DECODE_A(bc);
                 left=reg[a];
                 if (MORPHO_ISINTEGER(left)) {

@@ -13,6 +13,8 @@ set(BUILDIT_PATH "${CMAKE_SOURCE_DIR}/buildit")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -Wfatal-errors")
 
+set(CMAKE_C_COMPILER "gcc")
+
 include(ExternalProject)
 
 # Build the buildit subproject using make
