@@ -176,33 +176,45 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
              *      - Verify implementation?
              *      - Object operator redirection
              */
-            // case OP_POW: //POW
-            //     a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
-            //     left = reg[b];
-            //     right = reg[c];
+            case OP_POW: //POW
+                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
+                left = reg[b];
+                right = reg[c];
 
-            //     if (MORPHO_ISFLOAT(left)) {
-            //         if (MORPHO_ISFLOAT(right)) {
-            //             reg[a] = MORPHO_FLOAT( runtime::pow(MORPHO_GETFLOATVALUE(left), MORPHO_GETFLOATVALUE(right)) );
-            //             break;
-            //         } else if (MORPHO_ISINTEGER(right)) {
-            //             reg[a] = MORPHO_FLOAT( runtime::pow(MORPHO_GETFLOATVALUE(left), (double) MORPHO_GETINTEGERVALUE(right)) );
-            //             break;
-            //         }
-            // } else if (MORPHO_ISINTEGER(left)) {
-            //     if (MORPHO_ISFLOAT(right)) {
-            //         reg[a] = MORPHO_FLOAT( runtime::pow((double) MORPHO_GETINTEGERVALUE(left), MORPHO_GETFLOATVALUE(right)) );
-            //         break;
-            //     } else if (MORPHO_ISINTEGER(right)) {
-            //         reg[a] = MORPHO_FLOAT( runtime::pow((double) MORPHO_GETINTEGERVALUE(left), (double) MORPHO_GETINTEGERVALUE(right)) );
-            //         break;
-            //     }
-            // }
+                if (MORPHO_ISFLOAT(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = X_MORPHO_FLOAT( runtime::pow(X_MORPHO_GETFLOATVALUE(left), X_MORPHO_GETFLOATVALUE(right)) );
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = X_MORPHO_FLOAT( runtime::pow(X_MORPHO_GETFLOATVALUE(left), S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(right)) ));
+                        break;
+                    }
+                } else if (MORPHO_ISINTEGER(left)) {
+                    if (MORPHO_ISFLOAT(right)) {
+                        reg[a] = X_MORPHO_FLOAT( runtime::pow(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(left)),
+                                                            X_MORPHO_GETFLOATVALUE(right)) );
+                        break;
+                    } else if (MORPHO_ISINTEGER(right)) {
+                        reg[a] = 
+                            X_MORPHO_FLOAT( runtime::pow(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(left)),
+                                                        S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(right))));
+                        break;
+                    }
+                }
 
-            //     // OPREDIRECT(powselector, powrselector, a);
+                // OPREDIRECT(powselector, powrselector, a);
+                // OPERROR("Exponentiate")
+                break;
+            case OP_NOT:
+                a=DECODE_A(bc); b=DECODE_B(bc);
+                left = reg[b];
 
-            //     // OPERROR("Exponentiate")
-            //     break;
+                if (MORPHO_ISBOOL(left)) {
+                    reg[a] = X_MORPHO_BOOL(!X_MORPHO_GETBOOLVALUE(left));
+                } else {
+                    reg[a] = X_MORPHO_BOOL(MORPHO_ISNIL(left));
+                }
+                break;
             case OP_LT: //LT
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
@@ -237,6 +249,12 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                     runtime::printint( X_MORPHO_GETINTEGERVALUE(left) );
                 } else if (MORPHO_ISFLOAT(left)) {
                     runtime::printfloat( X_MORPHO_GETFLOATVALUE(left) );
+                } else if (MORPHO_ISBOOL(left)) {
+                    runtime::printbool(X_MORPHO_GETBOOLVALUE(left));
+                } else if (MORPHO_ISNIL(left)) {
+                    runtime::printnil();
+                } else {
+                    runtime::printunimplemented();
                 }
                 break;
             case OP_END: // END

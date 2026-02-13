@@ -1,22 +1,29 @@
 #ifndef SRC_VALUE_H
 #define SRC_VALUE_H
 
+#include "builder/dyn_var.h"
+
 #define DYNAMIFY_TYPE(type) dyn_var<type>
 
-#define CAST_DYN_VAR(type, val) (bitcast<type>(val))
+// static cast
+#define S_CAST_DYN_VAR(type, exp) (static_cast<DYNAMIFY_TYPE(type)>(exp))
+// reinterpret cast
+#define RI_CAST_DYN_VAR(type, val) (builder::bitcast<type>(val))
 
 static inline DYNAMIFY_TYPE(value) x_doubletovalue(dyn_var<double> num) {
-  return CAST_DYN_VAR(value, num);
+  return RI_CAST_DYN_VAR(value, num);
 }
 
 static inline DYNAMIFY_TYPE(double) x_valuetodouble(dyn_var<value> num) {
-  return CAST_DYN_VAR(double, num);
+  return RI_CAST_DYN_VAR(double, num);
 }
 
 #define X_MORPHO_INTEGER(x)         (((DYNAMIFY_TYPE(uint64_t)(x)) & LOWER_WORD) | QNAN | TAG_INT)
 #define X_MORPHO_GETINTEGERVALUE(v)   ((DYNAMIFY_TYPE(int))((DYNAMIFY_TYPE(uint32_t))(v & LOWER_WORD)))
 #define X_MORPHO_FLOAT(x)             x_doubletovalue(x)
 #define X_MORPHO_GETFLOATVALUE(v)     x_valuetodouble(v)
+#define X_MORPHO_BOOL(x)         (((DYNAMIFY_TYPE(uint64_t)(x)) & LOWER_WORD) | QNAN | TAG_BOOL)
+#define X_MORPHO_GETBOOLVALUE(v)   ((DYNAMIFY_TYPE(bool))((DYNAMIFY_TYPE(uint32_t))(v & LOWER_WORD)))
 
 
 #endif // SRC_VALUE_H
