@@ -50,7 +50,7 @@ if not transpilerpath.is_file():
 # .morpho file to be transpiled
 if args.FILE != "-":
     srcpath = Path(args.FILE).resolve()
-    basefilename = Path(srcpath.name)
+    basefilename = srcpath.name
 
     if not srcpath.is_file():
         print('No such file \'' + args.FILE + '\', exiting.', file=sys.stderr)
