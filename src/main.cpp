@@ -183,21 +183,21 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
 
             //     if (MORPHO_ISFLOAT(left)) {
             //         if (MORPHO_ISFLOAT(right)) {
-            //             reg[a] = MORPHO_FLOAT( pow(MORPHO_GETFLOATVALUE(left), MORPHO_GETFLOATVALUE(right)) );
+            //             reg[a] = MORPHO_FLOAT( runtime::pow(MORPHO_GETFLOATVALUE(left), MORPHO_GETFLOATVALUE(right)) );
             //             break;
             //         } else if (MORPHO_ISINTEGER(right)) {
-            //             reg[a] = MORPHO_FLOAT( pow(MORPHO_GETFLOATVALUE(left), (double) MORPHO_GETINTEGERVALUE(right)) );
+            //             reg[a] = MORPHO_FLOAT( runtime::pow(MORPHO_GETFLOATVALUE(left), (double) MORPHO_GETINTEGERVALUE(right)) );
             //             break;
             //         }
-            //     } else if (MORPHO_ISINTEGER(left)) {
-            //         if (MORPHO_ISFLOAT(right)) {
-            //             reg[a] = MORPHO_FLOAT( pow((double) MORPHO_GETINTEGERVALUE(left), MORPHO_GETFLOATVALUE(right)) );
-            //             break;
-            //         } else if (MORPHO_ISINTEGER(right)) {
-            //             reg[a] = MORPHO_FLOAT( pow((double) MORPHO_GETINTEGERVALUE(left), (double) MORPHO_GETINTEGERVALUE(right)) );
-            //             break;
-            //         }
+            // } else if (MORPHO_ISINTEGER(left)) {
+            //     if (MORPHO_ISFLOAT(right)) {
+            //         reg[a] = MORPHO_FLOAT( runtime::pow((double) MORPHO_GETINTEGERVALUE(left), MORPHO_GETFLOATVALUE(right)) );
+            //         break;
+            //     } else if (MORPHO_ISINTEGER(right)) {
+            //         reg[a] = MORPHO_FLOAT( runtime::pow((double) MORPHO_GETINTEGERVALUE(left), (double) MORPHO_GETINTEGERVALUE(right)) );
+            //         break;
             //     }
+            // }
 
             //     // OPREDIRECT(powselector, powrselector, a);
 
@@ -234,9 +234,9 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                 a=DECODE_A(bc);
                 left=reg[a];
                 if (MORPHO_ISINTEGER(left)) {
-                    printint( X_MORPHO_GETINTEGERVALUE(left) );
+                    runtime::printint( X_MORPHO_GETINTEGERVALUE(left) );
                 } else if (MORPHO_ISFLOAT(left)) {
-                    printfloat( X_MORPHO_GETFLOATVALUE(left) );
+                    runtime::printfloat( X_MORPHO_GETFLOATVALUE(left) );
                 }
                 break;
             case OP_END: // END
