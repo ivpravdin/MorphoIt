@@ -1,0 +1,8 @@
+print 1
+print 1.5
+print nil
+print false
+print true
+print "my string"
+print "\"my escaped string\""
+print "my\nmultiline\nstring"
