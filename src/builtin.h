@@ -1,7 +1,8 @@
 #ifndef SRC_BUILTIN_H
 #define SRC_BUILTIN_H
 
-#include "value.h"
+#include <value.h> // <- the libmorpho one
+#include "value.h" // <- the local one
 namespace runtime {
 	// If the function name exposed to buildit will be the same as the one appearing in transpiled code,
 	// you can use this macro
@@ -26,10 +27,10 @@ static void print_wrapper_code(std::ostream &oss) {
 	oss << "#include <math.h>\n";
 
 	oss << "void printint(int x) {printf(\"%d\\n\", x);}\n";
-    oss << "void printfloat(double x) {printf(\"%f\\n\", x);}\n";
-	oss << "void printbool(bool x) {printf(\"%s\\n\", x ? \"true\" : \"false\");}\n";
+    oss << "void printfloat(double x) {printf(\"%g\\n\", x);}\n";
+	oss << "void printbool(bool x) {printf(\"%s\\n\", x ? \"" << MORPHO_TRUESTRING << "\" : \"" << MORPHO_FALSESTRING << "\");}\n";
     oss << "void printstr(char x[]) {printf(\"%s\\n\", x);}\n";
-	oss << "void printnil() {printf(\"nil\\n\");}\n";
+	oss << "void printnil() {printf(\"" << MORPHO_NILSTRING << "\\n\");}\n";
 	oss << "void printunimplemented() {printf(\"(print has not been implemented for this type)\\n\");}\n";
 }
 
