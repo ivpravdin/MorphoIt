@@ -12,8 +12,16 @@
 using builder::dyn_var;
 using builder::static_var;
 
+
 extern "C"
 {
+    #ifdef _WIN32
+    #define MorphoThread HANDLE
+    #define MorphoMutex CRITICAL_SECTION
+    #else
+    #define MorphoThread pthread_t
+    #define MorphoMutex pthread_mutex_t
+    #endif
     #define cmplx_h
     #define platform_h
     #include <vm.h>
