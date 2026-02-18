@@ -13,7 +13,7 @@ namespace runtime {
 	RUNTIME_FN(void(bool), printbool);
 	RUNTIME_FN(void(void), printnil);
 	RUNTIME_FN(void(void), printunimplemented);
-	RUNTIME_FN(void(char*), printstr);
+	RUNTIME_FN(void(char*), printerr);
 
 	RUNTIME_FN(double(double, double), pow);
 
@@ -31,9 +31,8 @@ static void print_wrapper_code(std::ostream &oss) {
 	oss << "void printint(int x) {printf(\"%d\\n\", x);}\n";
     oss << "void printfloat(double x) {printf(\"%g\\n\", x);}\n";
 	oss << "void printbool(bool x) {printf(\"%s\\n\", x ? \"" << MORPHO_TRUESTRING << "\" : \"" << MORPHO_FALSESTRING << "\");}\n";
-    oss << "void printstr(char x[]) {printf(\"%s\\n\", x);}\n";
+    oss << "void printerr(char x[]) {fprintf(stderr, \"%s\\n\", x);}\n";
 	oss << "void printnil() {printf(\"" << MORPHO_NILSTRING << "\\n\");}\n";
-	oss << "void printunimplemented() {printf(\"(print has not been implemented for this type)\\n\");}\n";
 }
 
 #endif // BUILTIN_H

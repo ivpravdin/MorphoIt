@@ -3,11 +3,15 @@
 import subprocess as sp
 import sys
 import argparse
+from termcolor import colored
 from pathlib import Path
 from time import time
 
 USE_DEFAULT_FILENAME=1
 EXE_EXTENSION = '.exe' if sys.platform == 'win32' else '.bin'
+
+def morphoit_print(x):
+    print(colored('[MORPHOIT]', 'blue', attrs=['bold']), x, file=sys.stderr)
 
 
 parser = argparse.ArgumentParser()
@@ -53,9 +57,8 @@ if TRANSE_EXE is not None:
 transpilerpath = transpilerpath.resolve()
 
 if not transpilerpath.is_file():
-    print('Could not find executable for partial evaluator binary ' \
-          f'({str(transpilerpath)})',
-          file=sys.stderr)
+    morphoit_print('Could not find executable for partial evaluator binary ' \
+          f'({str(transpilerpath)})')
     exit(1)
 
 # .morpho file to be transpiled
@@ -64,7 +67,7 @@ if SRC_FILE != "-":
     basefilename = srcpath.name
 
     if not srcpath.is_file():
-        print('No such file \'' + SRC_FILE + '\', exiting.', file=sys.stderr)
+        morphoit_print('No such file \'' + SRC_FILE + '\', exiting.')
         exit(1)
 else:
     srcpath = SRC_FILE
@@ -86,66 +89,52 @@ if args.transpilation_file is not None:
     ircodepath = ircodepath.resolve()
 
 if VERBOSE:
-    print("Morpho to C transpiler executable path:", transpilerpath, file=sys.stderr)
-    print("Morpho sourcecode path:", srcpath, file=sys.stderr)
-    print("Produced executable path:", binpath, file=sys.stderr)
-    print("Transpiled code path:", ircodepath, file=sys.stderr)
-    print("Args Object:", args, file=sys.stderr)
+    morphoit_print("Morpho to C transpiler executable path: " + str(transpilerpath))
+    morphoit_print("Morpho sourcecode path: " + str(srcpath))
+    morphoit_print("Produced executable path: " + str(binpath))
+    morphoit_print("Transpiled code path: " + str(ircodepath))
+    morphoit_print("Args Object: " + str(args))
 
 
 trans_cmd = [str(transpilerpath), str(srcpath)]
 if VERBOSE:
-    print('Transpilation command:', *trans_cmd, file=sys.stderr)
+    morphoit_print('Transpilation command: ' + str(trans_cmd))
 
 if PROFILE:
     trans_start_time = time()
-trans_proc = sp.run(trans_cmd, capture_output=True)
+trans_proc = sp.run(trans_cmd, stdout=sp.PIPE)
 if PROFILE:
     trans_stop_time = time()
-
-if PROFILE:
-    print(f"Transpilation time (s): {trans_stop_time - trans_start_time}")
-
+    morphoit_print(f"Transpilation time (s): {trans_stop_time - trans_start_time}")
 if trans_proc.returncode != 0:
-    print(
-        'Transpilation exited with a non-zero exit code.' \
-        'Dumping stdout and stderr and exiting with its exit code.\n\n'\
-        '---------STDOUT----------\n',
-        trans_proc.stdout,
-        '\n\n---------STDERR----------\n',
-        trans_proc.stderr,
-        file=sys.stderr
-    )
-    exit(trans_proc.returncode)
+    morphoit_print(f"Morpho to C transpilation failed. Exiting.")
+    exit(1)
+
 
 if ircodepath is not None:
     with open(str(ircodepath), "wb") as file:
         file.write(trans_proc.stdout)
 
-if PROFILE:
-    comp_start_time = time()
 comp_cmd = ['cc', '-x', 'c', '-Wno-incompatible-pointer-types', '-O3', '-','-o', str(binpath)]
-if PROFILE:
-    comp_stop_time = time()
-
-if PROFILE:
-    print(f"Compilation time (s): {comp_stop_time - trans_start_time}")
 
 if VERBOSE:
-    print('Compilation command:', *comp_cmd, file=sys.stderr)
+    morphoit_print('Compilation command: ' + str(comp_cmd))
+if PROFILE:
+    comp_start_time = time()
 comp_proc = sp.run(comp_cmd, input=trans_proc.stdout)
-
+if PROFILE:
+    comp_stop_time = time()
+    morphoit_print(f"Compilation time (s): {comp_stop_time - comp_start_time}")
 if comp_proc.returncode != 0:
-    print(
-        'Compilation exited with a non-zero exit code. ' \
-        'Exiting with its code.',
-        file=sys.stderr
-    )
-    exit(trans_proc.returncode)
+    morphoit_print("C compilation failed. Exiting.")
+    exit(1)
+
 
 if not DRY_RUN:
-    run_start_time = time()
-    sp.run([binpath])
-    run_stop_time = time()
     if PROFILE:
-        print(f"Run time (s): {run_stop_time - run_stop_time}")
+        run_start_time = time()
+    run_proc = sp.run([binpath])
+    if PROFILE:
+        run_stop_time = time()
+        morphoit_print(f"Run time (s): {run_stop_time - run_stop_time}")
+    exit(run_proc.returncode)

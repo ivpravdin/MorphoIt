@@ -246,18 +246,19 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                 } else if (MORPHO_ISNIL(left)) {
                     runtime::printnil();
                 } else {
-                    runtime::printunimplemented();
+                    runtime::printerr("Print not implemented for this type.");
                 }
                 break;
             case OP_END: // END
-                return 0;
+                return EXIT_SUCCESS;
             default:
-                return 1;
+                runtime::printerr("Encountered unimplemented instruction. Exiting.");
+                return EXIT_FAILURE;
         }
 
         pc++;
     }
-    return 1;
+    return EXIT_FAILURE;
 }
 
 int main(int argc, char* argv[]) {
@@ -327,7 +328,8 @@ int main(int argc, char* argv[]) {
         }
 
     } else {
-        printf("Compilation error [%s]: %s\n", err.id, err.msg);
+        fprintf(stderr, "Morpho compilation error [%s]: %s\n", err.id, err.msg);
+        return EXIT_FAILURE;
     }
 
     morpho_freeprogram(p);
@@ -335,5 +337,5 @@ int main(int argc, char* argv[]) {
 
     morpho_finalize();
 
-	return 0;
+	return EXIT_SUCCESS;
 }
