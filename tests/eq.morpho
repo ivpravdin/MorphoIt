@@ -1,0 +1,17 @@
+// true
+print 1 == 1
+print 1.0 == 1.0
+print 1.0 == 1
+print 1 == 1.0
+print 2.0 * 2.0 == 2.0 + 2.0
+print 3.0 * 3.0 == 3.0 + 3.0 + 3.0
+print nil == nil
+print true == true
+print false == false
+
+// false
+print 1 == 2
+print 1.5 == 1.0
+print 0 == nil
+print false == true
+print true == false
