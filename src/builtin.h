@@ -17,6 +17,8 @@ namespace runtime {
 
 	RUNTIME_FN(double(double, double), pow);
 
+	RUNTIME_FN(double(double), round);
+
 	#undef RUNTIME_FN
 }
 

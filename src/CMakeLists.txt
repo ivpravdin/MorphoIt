@@ -1,4 +1,5 @@
 target_sources(morphoit
     PRIVATE
-        main.cpp   
+        main.cpp
+        value.cpp
 )

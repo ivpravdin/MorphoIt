@@ -12,35 +12,12 @@
 using builder::dyn_var;
 using builder::static_var;
 
-
-extern "C"
-{
-    #ifdef _WIN32
-    #define MorphoThread HANDLE
-    #define MorphoMutex CRITICAL_SECTION
-    #else
-    #define MorphoThread pthread_t
-    #define MorphoMutex pthread_mutex_t
-    #endif
-    #define cmplx_h
-    #define platform_h
-    #include <vm.h>
-    #include <classes.h>
-    #include <compile.h>
-    #include <profile.h>
-    #include <program.h>
-    #include <morpho.h>
-
-    // Prototypes for a couple of 
-    varray_instruction *program_getbytecode(program *p);
-    objectfunction *program_getglobalfn(program *p);
-}
+#include "morpho_header.h"
 
 #include "value.h"
 #include "builtin.h"
 
 static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunction *globalfn) {
-    static_var<uint32_t> consts[] = {0, 1, 30000};
     dyn_var<value[255]> reg;
     dyn_var<value> left, right;
     
@@ -212,6 +189,13 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
 
                 // OPREDIRECT(powselector, powrselector, a);
                 // OPERROR("Exponentiate")
+                break;
+            case OP_EQ:
+                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
+                left = reg[b];
+                right = reg[c];
+
+                reg[a] = x_morpho_extendedcomparevalue(left, right) == MORPHO_EQUAL;
                 break;
             case OP_NOT:
                 a=DECODE_A(bc); b=DECODE_B(bc);

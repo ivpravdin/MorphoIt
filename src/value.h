@@ -2,6 +2,10 @@
 #define SRC_VALUE_H
 
 #include "builder/dyn_var.h"
+#include "morpho_header.h"
+
+using builder::dyn_var;
+using builder::static_var;
 
 #define DYNAMIFY_TYPE(type) dyn_var<type>
 
@@ -24,6 +28,17 @@ static inline DYNAMIFY_TYPE(double) x_valuetodouble(dyn_var<value> num) {
 #define X_MORPHO_GETFLOATVALUE(v)     x_valuetodouble(v)
 #define X_MORPHO_BOOL(x)         (((DYNAMIFY_TYPE(uint64_t)(x)) & LOWER_WORD) | QNAN | TAG_BOOL)
 #define X_MORPHO_GETBOOLVALUE(v)   ((DYNAMIFY_TYPE(bool))((DYNAMIFY_TYPE(uint32_t))(v & LOWER_WORD)))
+#define X_MORPHO_OBJECT(x)            ((DYNAMIFY_TYPE(value)) (TAG_OBJ | QNAN | (DYNAMIFY_TYPE(uint64_t))(DYNAMIFY_TYPE(uintptr_t))(x)))
+#define X_MORPHO_GETOBJECT(v)         ((DYNAMIFY_TYPE(object *)) (DYNAMIFY_TYPE(uintptr_t)) ((v) & ~(TAG_OBJ | QNAN)))
+#define X_MORPHO_GETOBJECTTYPE(val)           (X_MORPHO_GETOBJECT(val)->type)
 
+/** Conversion of integer to a float */
+#define X_MORPHO_INTEGERTOFLOAT(x) (X_MORPHO_BOOL((double) X_MORPHO_GETINTEGERVALUE((x))))
+
+/** Conversion of a float to an integer with rounding */
+#define X_MORPHO_FLOATTOINTEGER(x) (X_MORPHO_INTEGER((int) round(X_MORPHO_GETFLOATVALUE((x)))))
+
+DYNAMIFY_TYPE(int) x_morpho_comparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
+DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
 
 #endif // SRC_VALUE_H
