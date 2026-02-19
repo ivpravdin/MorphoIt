@@ -195,7 +195,7 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = x_morpho_extendedcomparevalue(left, right) == MORPHO_EQUAL;
+                reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(left, right));
                 break;
             case OP_NOT:
                 a=DECODE_A(bc); b=DECODE_B(bc);

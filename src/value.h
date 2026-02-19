@@ -14,11 +14,11 @@ using builder::static_var;
 // reinterpret cast
 #define RI_CAST_DYN_VAR(type, val) (builder::bitcast<type>(val))
 
-static inline DYNAMIFY_TYPE(value) x_doubletovalue(dyn_var<double> num) {
+static inline DYNAMIFY_TYPE(value) x_doubletovalue(DYNAMIFY_TYPE(double) num) {
   return RI_CAST_DYN_VAR(value, num);
 }
 
-static inline DYNAMIFY_TYPE(double) x_valuetodouble(dyn_var<value> num) {
+static inline DYNAMIFY_TYPE(double) x_valuetodouble(DYNAMIFY_TYPE(value) num) {
   return RI_CAST_DYN_VAR(double, num);
 }
 
@@ -33,7 +33,7 @@ static inline DYNAMIFY_TYPE(double) x_valuetodouble(dyn_var<value> num) {
 #define X_MORPHO_GETOBJECTTYPE(val)           (X_MORPHO_GETOBJECT(val)->type)
 
 /** Conversion of integer to a float */
-#define X_MORPHO_INTEGERTOFLOAT(x) (X_MORPHO_BOOL((double) X_MORPHO_GETINTEGERVALUE((x))))
+#define X_MORPHO_INTEGERTOFLOAT(x) (X_MORPHO_FLOAT(DYNAMIFY_TYPE(double) X_MORPHO_GETINTEGERVALUE((x))))
 
 /** Conversion of a float to an integer with rounding */
 #define X_MORPHO_FLOATTOINTEGER(x) (X_MORPHO_INTEGER((int) round(X_MORPHO_GETFLOATVALUE((x)))))
