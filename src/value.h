@@ -23,6 +23,8 @@ static inline DYNAMIFY_TYPE(double) x_valuetodouble(DYNAMIFY_TYPE(value) num) {
 }
 
 #define X_MORPHO_OFSAMETYPE(a, b) (MORPHO_GETTYPE(a) == MORPHO_GETTYPE(b))
+#define X_MORPHO_ISFALSE(a) (MORPHO_ISNIL(a) || (MORPHO_ISBOOL(a) && (MORPHO_GETBOOLVALUE(a)==false)))
+#define X_MORPHO_ISTRUE(a) (!X_MORPHO_ISFALSE((a)))
 
 #define X_MORPHO_INTEGER(x)         (((DYNAMIFY_TYPE(uint64_t)(x)) & LOWER_WORD) | QNAN | TAG_INT)
 #define X_MORPHO_GETINTEGERVALUE(v)   ((DYNAMIFY_TYPE(int))((DYNAMIFY_TYPE(uint32_t))(v & LOWER_WORD)))

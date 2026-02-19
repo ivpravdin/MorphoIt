@@ -219,17 +219,40 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = (left<right);
+                // TODO: Type Errors
+                // if ( !( (MORPHO_ISFLOAT(left) || MORPHO_ISINTEGER(left)) &&
+                //     (MORPHO_ISFLOAT(right) || MORPHO_ISINTEGER(right)) ) ) {
+                //     OPERROR("Compare");
+                // }
+
+                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right) > MORPHO_EQUAL);
+                break;
+            case OP_LE: //LT
+                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
+                left = reg[b];
+                right = reg[c];
+                // TODO: Type Errors
+                // if ( !( (MORPHO_ISFLOAT(left) || MORPHO_ISINTEGER(left)) &&
+                //        (MORPHO_ISFLOAT(right) || MORPHO_ISINTEGER(right)) ) ) {
+                //     OPERROR("Compare");
+                // }
+                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right) >= MORPHO_EQUAL);
                 break;
             case OP_B: // B
                 b=DECODE_sBx(bc);
                 pc+=b;
                 break;
+            case OP_BIF: // BIF
+                a=DECODE_A(bc);
+                left=reg[a];
+
+                if (X_MORPHO_ISTRUE(left)) pc+=DECODE_sBx(bc);
+                break;
             case OP_BIFF: // BIFF
                 a=DECODE_A(bc);
                 left=reg[a];
 
-                if (!left) pc+=DECODE_sBx(bc);
+                if (X_MORPHO_ISFALSE(left)) pc+=DECODE_sBx(bc);
                 break;
             case OP_LGL: // LGL
                 a=DECODE_A(bc);
