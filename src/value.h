@@ -1,13 +1,11 @@
 #ifndef SRC_VALUE_H
 #define SRC_VALUE_H
 
+#include "builder/static_var.h"
 #include "builder/dyn_var.h"
 #include "morpho_header.h"
 
-using builder::dyn_var;
-using builder::static_var;
-
-#define DYNAMIFY_TYPE(type) dyn_var<type>
+#define DYNAMIFY_TYPE(type) builder::dyn_var<type>
 
 // static cast
 #define S_CAST_DYN_VAR(type, exp) (static_cast<DYNAMIFY_TYPE(type)>(exp))
