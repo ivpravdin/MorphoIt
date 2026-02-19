@@ -22,6 +22,8 @@ static inline DYNAMIFY_TYPE(double) x_valuetodouble(DYNAMIFY_TYPE(value) num) {
   return RI_CAST_DYN_VAR(double, num);
 }
 
+#define X_MORPHO_OFSAMETYPE(a, b) (MORPHO_GETTYPE(a) == MORPHO_GETTYPE(b))
+
 #define X_MORPHO_INTEGER(x)         (((DYNAMIFY_TYPE(uint64_t)(x)) & LOWER_WORD) | QNAN | TAG_INT)
 #define X_MORPHO_GETINTEGERVALUE(v)   ((DYNAMIFY_TYPE(int))((DYNAMIFY_TYPE(uint32_t))(v & LOWER_WORD)))
 #define X_MORPHO_FLOAT(x)             x_doubletovalue(x)
