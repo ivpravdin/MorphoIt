@@ -288,6 +288,7 @@ static dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], object
 
         pc++;
     }
+    runtime::printerr("Program counter exceeded bytecode buffer. Exiting.");
     return EXIT_FAILURE;
 }
 
@@ -334,8 +335,7 @@ int main(int argc, char* argv[]) {
     error err;
     error_init(&err);
 
-    // that char * cast is to remove constness :P
-    if (morpho_compile((char *)src.c_str(), c, false, &err)) {
+    if (morpho_compile(const_cast<char*>(src.c_str()), c, false, &err)) {
         varray_instruction *code = program_getbytecode(p);
         objectfunction *globalfn = program_getglobalfn(p);
         
