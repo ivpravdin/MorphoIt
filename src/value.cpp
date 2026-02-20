@@ -1,6 +1,7 @@
 #include "value.h"
 #include "morpho_header.h"
 #include "builder/dyn_var.h"
+#include "builtin.h"
 
 using builder::dyn_var;
 using builder::static_var;
@@ -12,9 +13,6 @@ DYNAMIFY_TYPE(bool) x_morpho_valuetofloat(DYNAMIFY_TYPE(value) v, DYNAMIFY_TYPE(
     return false;
 }
 
-namespace runtime {
-    DYNAMIFY_TYPE(double(double)) fabs(builder::as_global("fabs"));
-}
 
 // DYNAMIFY_TYPE(double) fabs(DYNAMIFY_TYPE(double) x) {
 //     DYNAMIFY_TYPE(double) y = x;
