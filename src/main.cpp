@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
             }
         }
         else {
-            auto ast = context.extract_function_ast(morpho_vm, "main", ninstructions, bytecode, globalfn);
+            auto ast = context.extract_function_ast(vm_enter, "main", ninstructions, bytecode, globalfn);
             print_wrapper_code(std::cout);
             block::c_code_generator::generate_code(ast, std::cout, 0);
         }

@@ -33,14 +33,17 @@ static inline DYNAMIFY_TYPE(double) x_valuetodouble(DYNAMIFY_TYPE(value) num) {
 #define X_MORPHO_OBJECT(x)            ((DYNAMIFY_TYPE(value)) (TAG_OBJ | QNAN | (DYNAMIFY_TYPE(uint64_t))(DYNAMIFY_TYPE(uintptr_t))(x)))
 #define X_MORPHO_GETOBJECT(v)         ((DYNAMIFY_TYPE(object *)) (DYNAMIFY_TYPE(uintptr_t)) ((v) & ~(TAG_OBJ | QNAN)))
 #define X_MORPHO_GETOBJECTTYPE(val)           (X_MORPHO_GETOBJECT(val)->type)
+#define X_MORPHO_GETFUNCTION(val)   (DYNAMIFY_TYPE(objectfunction *) X_MORPHO_GETOBJECT(val))
 
 /** Conversion of integer to a float */
-#define X_MORPHO_INTEGERTOFLOAT(x) (X_MORPHO_FLOAT(DYNAMIFY_TYPE(double) X_MORPHO_GETINTEGERVALUE((x))))
+#define X_MORPHO_INTEGERTOFLOAT(x) ((X_MORPHO_FLOAT(DYNAMIFY_TYPE(double)) X_MORPHO_GETINTEGERVALUE((x))))
 
 /** Conversion of a float to an integer with rounding */
 #define X_MORPHO_FLOATTOINTEGER(x) (X_MORPHO_INTEGER((int) round(X_MORPHO_GETFLOATVALUE((x)))))
 
-DYNAMIFY_TYPE(int) x_morpho_comparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
-DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
+// DYNAMIFY_TYPE(int) x_morpho_comparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
+// DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
+
+DYNAMIFY_TYPE(int) x_morpho_compare(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
 
 #endif // SRC_VALUE_H

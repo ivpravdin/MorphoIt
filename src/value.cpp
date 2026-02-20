@@ -13,97 +13,130 @@ DYNAMIFY_TYPE(bool) x_morpho_valuetofloat(DYNAMIFY_TYPE(value) v, DYNAMIFY_TYPE(
     return false;
 }
 
-
 // DYNAMIFY_TYPE(double) fabs(DYNAMIFY_TYPE(double) x) {
 //     DYNAMIFY_TYPE(double) y = x;
 //     if (y < 0) y = -y;
 //     return y;
 // }
 
-/**  @brief Compare two doubles for equality using both absolute and relative tolerances */
-DYNAMIFY_TYPE(bool) x_morpho_doubleeqtest(DYNAMIFY_TYPE(double) a, DYNAMIFY_TYPE(double) b) {
-    if (a==b) return true; 
-    DYNAMIFY_TYPE(double) diff = runtime::fabs(a-b);
-    DYNAMIFY_TYPE(double) absa = runtime::fabs(a), absb=runtime::fabs(b);
-    DYNAMIFY_TYPE(double) absmax = (absa>absb ? absa : absb);
-    return (diff == 0.0) || (absmax > DBL_MIN && diff/absmax <= MORPHO_RELATIVE_EPS);
-}
+// /**  @brief Compare two doubles for equality using both absolute and relative tolerances */
+// DYNAMIFY_TYPE(bool) x_morpho_doubleeqtest(DYNAMIFY_TYPE(double) a, DYNAMIFY_TYPE(double) b) {
+//     if (a==b) return true; 
+//     DYNAMIFY_TYPE(double) diff = runtime::fabs(a-b);
+//     DYNAMIFY_TYPE(double) absa = runtime::fabs(a), absb=runtime::fabs(b);
+//     DYNAMIFY_TYPE(double) absmax = (absa>absb ? absa : absb);
+//     return (diff == 0.0) || (absmax > DBL_MIN && diff/absmax <= MORPHO_RELATIVE_EPS);
+// }
 
-/** @brief Compares two values
- * @param a value to compare
- * @param b value to compare
- * @returns 0 if a and b are equal, a positive number if b\>a and a negative number if a\<b
- * @warning Requires that both values have the same type */
-DYNAMIFY_TYPE(int) x_morpho_comparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b) {
-    //if (!morpho_ofsametype(a, b)) return MORPHO_NOTEQUAL;
+// /** @brief Compares two values
+//  * @param a value to compare
+//  * @param b value to compare
+//  * @returns 0 if a and b are equal, a positive number if b\>a and a negative number if a\<b
+//  * @warning Requires that both values have the same type */
+// DYNAMIFY_TYPE(int) x_morpho_comparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b) {
+//     //if (!morpho_ofsametype(a, b)) return MORPHO_NOTEQUAL;
     
+//     if (MORPHO_ISFLOAT(a)) {
+//         DYNAMIFY_TYPE(double) aa = X_MORPHO_GETFLOATVALUE(a);
+//         DYNAMIFY_TYPE(double) bb = X_MORPHO_GETFLOATVALUE(b);
+//         if (x_morpho_doubleeqtest(aa, bb)) return MORPHO_EQUAL;
+//         return (bb>aa ? MORPHO_BIGGER : MORPHO_SMALLER);
+//     }
+    
+//     if (MORPHO_ISNIL(a)) {
+//         return MORPHO_EQUAL;
+//     }
+    
+//     if (MORPHO_ISINTEGER(a)) {
+//         DYNAMIFY_TYPE(int) aa = X_MORPHO_GETINTEGERVALUE(a);
+//         DYNAMIFY_TYPE(int) bb = X_MORPHO_GETINTEGERVALUE(b);
+//         if (aa==bb) return MORPHO_EQUAL;
+//         return (bb>aa ? MORPHO_BIGGER : MORPHO_SMALLER);
+//     }
+    
+//     if (MORPHO_ISBOOL(a)) {
+//         return (X_MORPHO_GETBOOLVALUE(b) != X_MORPHO_GETBOOLVALUE(a));
+//     }
+    
+//     // if (MORPHO_ISOBJECT(a)) {
+//     //     if (X_MORPHO_GETOBJECTTYPE(a)!=X_MORPHO_GETOBJECTTYPE(b)) {
+//     //         return 1;
+//     //     }
+//     //     // TODO: write object_cmp for dyn_var
+//     //     //return object_cmp(X_MORPHO_GETOBJECT(a), X_MORPHO_GETOBJECT(b));
+//     // }
+    
+//     return MORPHO_NOTEQUAL;
+// }
+
+
+
+// /** @brief Compares two values, even for inequivalent values e.g. int to float
+//  * @param a value to compare
+//  * @param b value to compare
+//  * @returns 0 if a and b are equal, a positive number if b\>a and a negative number if a\<b*/
+// DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b) {
+//     if (X_MORPHO_OFSAMETYPE(a, b)) return x_morpho_comparevalue(a, b);
+    
+//     DYNAMIFY_TYPE(value) aa=a, bb=b;
+    
+//     if (MORPHO_ISINTEGER(a) && MORPHO_ISFLOAT(b)) {
+//         aa = X_MORPHO_INTEGERTOFLOAT(a);
+//         return x_morpho_comparevalue(aa, bb);
+//     } else if (MORPHO_ISFLOAT(a) && MORPHO_ISINTEGER(b)) {
+//         bb = X_MORPHO_INTEGERTOFLOAT(b);
+//         return x_morpho_comparevalue(aa, bb);
+//     }
+
+//     // TODO: support complex numbers
+//     // } else if (MORPHO_ISCOMPLEX(bb) && MORPHO_ISNUMBER(aa)) {
+//     //     aa=b; bb=a;
+//     // }
+    
+//     // if (X_MORPHO_ISCOMPLEX(aa) && X_MORPHO_ISNUMBER(bb)) {
+//     //     DYNAMIFY_TYPE(MorphoComplex) z = X_MORPHO_GETDOUBLECOMPLEX(aa);
+//     //     if (fabs(cimag(z)) < cabs(z)*MORPHO_RELATIVE_EPS) { // Ensure imaginary part is zero
+//     //         aa=X_MORPHO_FLOAT(creal(z));
+//     //         DYNAMIFY_TYPE(double) real;
+//     //         x_morpho_valuetofloat(bb, &real);
+//     //         bb=X_MORPHO_FLOAT(real);
+//     //     } else return MORPHO_NOTEQUAL;
+//     //     return x_morpho_comparevalue(aa, bb);
+//     // }
+    
+//     return MORPHO_NOTEQUAL;
+// }
+
+/* returns 0 if values are equal, negative if a < b, positive if a > b */
+DYNAMIFY_TYPE(int) x_morpho_compare(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b) {
     if (MORPHO_ISFLOAT(a)) {
-        DYNAMIFY_TYPE(double) aa = X_MORPHO_GETFLOATVALUE(a);
-        DYNAMIFY_TYPE(double) bb = X_MORPHO_GETFLOATVALUE(b);
-        if (x_morpho_doubleeqtest(aa, bb)) return MORPHO_EQUAL;
-        return (bb>aa ? MORPHO_BIGGER : MORPHO_SMALLER);
-    }
-    
-    if (MORPHO_ISNIL(a)) {
+        if (MORPHO_ISFLOAT(b)) {
+            return runtime::comparedoubles(X_MORPHO_GETFLOATVALUE(a), X_MORPHO_GETFLOATVALUE(b));
+        } else if (MORPHO_ISINTEGER(b)) {
+            return runtime::comparedoubles(X_MORPHO_GETFLOATVALUE(a), X_MORPHO_GETINTEGERVALUE(b));
+        }
+    } else if (MORPHO_ISINTEGER(a)) {
+        if (MORPHO_ISFLOAT(b)) {
+            return runtime::comparedoubles(X_MORPHO_GETINTEGERVALUE(a), X_MORPHO_GETFLOATVALUE(b));
+        } else if (MORPHO_ISINTEGER(b)) {
+            return runtime::compareints(X_MORPHO_GETINTEGERVALUE(a), X_MORPHO_GETINTEGERVALUE(b));
+        }
+    } else if (MORPHO_ISBOOL(a) && MORPHO_ISBOOL(b)) {
+        return runtime::comparebools(X_MORPHO_GETBOOLVALUE(a), X_MORPHO_GETBOOLVALUE(b));
+    } else if (MORPHO_ISNIL(a) && MORPHO_ISNIL(b)) {
         return MORPHO_EQUAL;
+    } else if (X_MORPHO_OFSAMETYPE(a, b)) {
+        if (MORPHO_ISNIL(a)) {
+            return MORPHO_EQUAL;
+        } else {/*if (MORPHO_ISOBJECT(a)) {
+            if (X_MORPHO_GETOBJECTTYPE(a) != X_MORPHO_GETOBJECTTYPE(b)) {
+                return MORPHO_NOTEQUAL;
+            } else {
+                // need to compare objects of the same type, but we don't have a way to do that yet
+                return MORPHO_NOTEQUAL;
+            }*/
+           return MORPHO_NOTEQUAL;
+        }
     }
-    
-    if (MORPHO_ISINTEGER(a)) {
-        DYNAMIFY_TYPE(int) aa = X_MORPHO_GETINTEGERVALUE(a);
-        DYNAMIFY_TYPE(int) bb = X_MORPHO_GETINTEGERVALUE(b);
-        if (aa==bb) return MORPHO_EQUAL;
-        return (bb>aa ? MORPHO_BIGGER : MORPHO_SMALLER);
-    }
-    
-    if (MORPHO_ISBOOL(a)) {
-        return (X_MORPHO_GETBOOLVALUE(b) != X_MORPHO_GETBOOLVALUE(a));
-    }
-    
-    // if (MORPHO_ISOBJECT(a)) {
-    //     if (X_MORPHO_GETOBJECTTYPE(a)!=X_MORPHO_GETOBJECTTYPE(b)) {
-    //         return 1;
-    //     }
-    //     // TODO: write object_cmp for dyn_var
-    //     //return object_cmp(X_MORPHO_GETOBJECT(a), X_MORPHO_GETOBJECT(b));
-    // }
-    
-    return MORPHO_NOTEQUAL;
-}
-
-
-
-/** @brief Compares two values, even for inequivalent values e.g. int to float
- * @param a value to compare
- * @param b value to compare
- * @returns 0 if a and b are equal, a positive number if b\>a and a negative number if a\<b*/
-DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b) {
-    if (X_MORPHO_OFSAMETYPE(a, b)) return x_morpho_comparevalue(a, b);
-    
-    DYNAMIFY_TYPE(value) aa=a, bb=b;
-    
-    if (MORPHO_ISINTEGER(a) && MORPHO_ISFLOAT(b)) {
-        aa = X_MORPHO_INTEGERTOFLOAT(a);
-        return x_morpho_comparevalue(aa, bb);
-    } else if (MORPHO_ISFLOAT(a) && MORPHO_ISINTEGER(b)) {
-        bb = X_MORPHO_INTEGERTOFLOAT(b);
-        return x_morpho_comparevalue(aa, bb);
-    }
-
-    // TODO: support complex numbers
-    // } else if (MORPHO_ISCOMPLEX(bb) && MORPHO_ISNUMBER(aa)) {
-    //     aa=b; bb=a;
-    // }
-    
-    // if (X_MORPHO_ISCOMPLEX(aa) && X_MORPHO_ISNUMBER(bb)) {
-    //     DYNAMIFY_TYPE(MorphoComplex) z = X_MORPHO_GETDOUBLECOMPLEX(aa);
-    //     if (fabs(cimag(z)) < cabs(z)*MORPHO_RELATIVE_EPS) { // Ensure imaginary part is zero
-    //         aa=X_MORPHO_FLOAT(creal(z));
-    //         DYNAMIFY_TYPE(double) real;
-    //         x_morpho_valuetofloat(bb, &real);
-    //         bb=X_MORPHO_FLOAT(real);
-    //     } else return MORPHO_NOTEQUAL;
-    //     return x_morpho_comparevalue(aa, bb);
-    // }
-    
     return MORPHO_NOTEQUAL;
 }

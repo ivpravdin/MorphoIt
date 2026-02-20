@@ -10,11 +10,17 @@
 using builder::dyn_var;
 using builder::static_var;
 
-dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunction *globalfn) {
+dyn_var<value> vm_enter(const int n, const uint32_t instructions[], objectfunction *fn) {
+    vm_t vm;
+    return morpho_vm(&vm, n, instructions, fn);
+}
+
+/* @param[in] n - size of instruction buffer
+ * @param[in] instructions[] - instruction buffer
+ * @param[in] fn - function to execute  */
+dyn_var<value> morpho_vm(vm_t *v, const int n, const uint32_t instructions[], objectfunction *fn) {
     dyn_var<value[255]> reg;
     dyn_var<value> left, right;
-    
-    dyn_var<value[100]> globals;
     
     static_var<int32_t> a, b, c;
     static_var<int32_t> bc;
@@ -36,7 +42,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
 
             case OP_LCT:
                 a=DECODE_A(bc); b=DECODE_Bx(bc);
-                reg[a] = globalfn->konst.data[b];
+                reg[a] = fn->konst.data[b];
                 break;
             /* OPCODE: ADD
              * 
@@ -188,14 +194,14 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(left, right));
+                reg[a] = X_MORPHO_BOOL(!x_morpho_compare(left, right));
                 break;
             case OP_NEQ:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right));
+                // reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right));
                 break;
             case OP_NOT:
                 a=DECODE_A(bc); b=DECODE_B(bc);
@@ -218,7 +224,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 //     OPERROR("Compare");
                 // }
 
-                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right) > MORPHO_EQUAL);
+                // reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right) > MORPHO_EQUAL);
                 break;
             case OP_LE: //LT
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
@@ -229,7 +235,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 //        (MORPHO_ISFLOAT(right) || MORPHO_ISINTEGER(right)) ) ) {
                 //     OPERROR("Compare");
                 // }
-                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right) >= MORPHO_EQUAL);
+                // reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right) >= MORPHO_EQUAL);
                 break;
             case OP_B: // B
                 b=DECODE_sBx(bc);
@@ -250,13 +256,30 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
             case OP_LGL: // LGL
                 a=DECODE_A(bc);
                 b=DECODE_Bx(bc);
-                reg[a]=globals[b];
+                reg[a]=v->globals[b];
                 break;
             case OP_SGL: // SGL
                 a=DECODE_A(bc);
                 b=DECODE_Bx(bc);
-                globals[b]=reg[a];
+                v->globals[b]=reg[a];
                 break;
+            case OP_CALL: // Call
+                a=DECODE_A(bc);
+                left=reg[a];
+                b=DECODE_B(bc); // Number of positional arguments
+                // if (MORPHO_ISFUNCTION(left)) {
+                //     objectfunction *thefn = X_MORPHO_GETFUNCTION(left);
+                //     reg[a] = morpho_vm(v, n, instructions, thefn);
+                //     //reg[a] = morpho_vm(v, n, instructions, b, reg + a + 1, thefn);
+                // }
+                break; 
+            case OP_RETURN: // Return (whatever is in register b)
+                a=DECODE_A(bc);
+                if (a>0) {
+                    b=DECODE_B(bc);
+                    return reg[b];
+                } else return MORPHO_NIL; 
+                break; 
             case OP_PRINT: // PRINT
                 a=DECODE_A(bc);
                 left=reg[a];
@@ -273,14 +296,14 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 }
                 break;
             case OP_END: // END
-                return EXIT_SUCCESS;
+                return MORPHO_TRUE;
             default:
                 runtime::printerr("Encountered unimplemented instruction. Exiting.");
-                return EXIT_FAILURE;
+                return MORPHO_FALSE;
         }
 
         pc++;
     }
     runtime::printerr("Program counter exceeded bytecode buffer. Exiting.");
-    return EXIT_FAILURE;
+    return MORPHO_FALSE;
 }

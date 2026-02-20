@@ -20,6 +20,11 @@ namespace runtime {
 	DECL_RUNTIME_FN(double(double), round);
     DECL_RUNTIME_FN(double(double), fabs);
 
+	DECL_RUNTIME_FN(bool(double, double), doubleeqtest);
+	DECL_RUNTIME_FN(int(double, double), comparedoubles);
+	DECL_RUNTIME_FN(int(int, int), compareints);
+	DECL_RUNTIME_FN(int(bool, bool), comparebools);
+
 	#undef DECL_RUNTIME_FN
 }
 
