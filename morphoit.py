@@ -3,7 +3,7 @@
 import subprocess as sp
 import sys
 import argparse
-from termcolor import colored
+from colored import stylize, fg, Style
 from pathlib import Path
 from time import time
 
@@ -12,7 +12,7 @@ EXE_EXTENSION = ".exe" if sys.platform == "win32" else ".bin"
 
 
 def morphoit_print(x):
-    print(colored("[MORPHOIT]", "blue", attrs=["bold"]), x, file=sys.stderr)
+    print(stylize("[MORPHOIT]", fg("blue"), Style.bold), x, file=sys.stderr)
 
 
 parser = argparse.ArgumentParser()
