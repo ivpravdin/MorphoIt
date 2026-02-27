@@ -268,12 +268,15 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                     runtime::printbool(X_MORPHO_GETBOOLVALUE(left));
                 } else if (MORPHO_ISNIL(left)) {
                     runtime::printnil();
+                } else if (MORPHO_ISOBJECT(left)) {
+                    dyn_var<dyn_object *> objptr = X_MORPHO_GETOBJECT(left);
+                    runtime::object_print(0, objptr);
                 } else {
-                    runtime::printerr("Print not implemented for this type.");
+                    runtime::printerr("Unknown type to print.");
                 }
                 break;
             case OP_END: // END
-                return EXIT_SUCCESS;
+                return EXIT_SUCCESS;    
             default:
                 runtime::printerr("Encountered unimplemented instruction. Exiting.");
                 return EXIT_FAILURE;

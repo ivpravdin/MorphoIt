@@ -13,6 +13,7 @@ namespace runtime {
 	RUNTIME_FN(void(void), printnil);
 	RUNTIME_FN(void(void), printunimplemented);
 	RUNTIME_FN(void(char*), printerr);
+	RUNTIME_FN(void(void *, value), object_print);
 
 	RUNTIME_FN(double(double, double), pow);
 
@@ -27,10 +28,13 @@ void print_wrapper_code(std::ostream &oss) {
 	oss << "#include <stdlib.h>\n";
     oss << "#include <stdbool.h>\n";
 	oss << "#include <math.h>\n";
+	oss << "#include <morpho/morpho.h>\n";
+	oss << "#include <morpho/object.h>\n";
 
 	oss << "void printint(int x) {printf(\"%d\\n\", x);}\n";
     oss << "void printfloat(double x) {printf(\"%g\\n\", x);}\n";
 	oss << "void printbool(bool x) {printf(\"%s\\n\", x ? \"" << MORPHO_TRUESTRING << "\" : \"" << MORPHO_FALSESTRING << "\");}\n";
     oss << "void printerr(char x[]) {fprintf(stderr, \"%s\\n\", x);}\n";
 	oss << "void printnil() {printf(\"" << MORPHO_NILSTRING << "\\n\");}\n";
+	oss << "void printstring(char x[]) {printf(\"%s\\n\", x);}\n";
 }

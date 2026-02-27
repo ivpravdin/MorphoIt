@@ -3,6 +3,7 @@
 #include <iterator>
 #include <filesystem>
 #include <cstring>
+#include <dlfcn.h>
 
 #include "blocks/c_code_generator.h"
 
@@ -11,6 +12,15 @@
 #include "morpho_header.h"
 #include "pe_vm.h"
 #include "builtin.h"
+
+#define TMP_C_FILE "/tmp/pe_out.c"
+
+void* compile_and_load_lib(const char* filepath) {
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "gcc -O3 -shared -fPIC -Wno-incompatible-pointer-types -Wno-int-conversion %s -o /tmp/pe_out.so", filepath);
+    system(cmd);
+    return dlopen("/tmp/pe_out.so", RTLD_NOW);
+}
 
 int main(int argc, char* argv[]) {
     bool hexdump = false;
@@ -72,9 +82,15 @@ int main(int argc, char* argv[]) {
             }
         }
         else {
-            auto ast = context.extract_function_ast(morpho_vm, "main", ninstructions, bytecode, globalfn);
-            print_wrapper_code(std::cout);
-            block::c_code_generator::generate_code(ast, std::cout, 0);
+            std::ofstream file(TMP_C_FILE);
+            auto ast = context.extract_function_ast(morpho_vm, "main_morpho", ninstructions, bytecode, globalfn);
+            print_wrapper_code(file);
+            block::c_code_generator::generate_code(ast, file, 0);
+            file.close();
+            void* lib = compile_and_load_lib(TMP_C_FILE);
+            auto main_morpho = (int (*)()) dlsym(lib, "main_morpho");
+            int result = main_morpho();
+            //std::cout << "Program exited with code " << result << std::endl;
         }
 
     } else {
