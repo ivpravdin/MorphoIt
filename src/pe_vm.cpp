@@ -47,25 +47,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
             case OP_ADD:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b], right = reg[c];
-                if (MORPHO_ISFLOAT(left)) {
-                    if (MORPHO_ISFLOAT(right)) {
-                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) + X_MORPHO_GETFLOATVALUE(right));
-                        break;
-                    } else if (MORPHO_ISINTEGER(right)) {
-                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) + X_MORPHO_GETINTEGERVALUE(right));
-                        break;
-                    }
-                } else if (MORPHO_ISINTEGER(left)) {
-                    if (MORPHO_ISFLOAT(right)) {
-                        reg[a] = X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) + X_MORPHO_GETFLOATVALUE(right));
-                        break;
-                    } else if (MORPHO_ISINTEGER(right)) {
-                        reg[a] = X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) + X_MORPHO_GETINTEGERVALUE(right));
-                        break;
-                    }
-                } else if (MORPHO_ISSTRING(left) && MORPHO_ISSTRING(right)) {
-                    reg[a] = object_concatenatestring(left, right);
-                }
+                runtime::add(left, right, &reg[a]);
                 break;
             /* OPCODE: SUBTRACT
              * 

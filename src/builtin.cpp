@@ -20,6 +20,8 @@ namespace runtime {
 	RUNTIME_FN(double(double), round);
     RUNTIME_FN(double(double), fabs);
 
+	RUNTIME_FN(value(value, value), add);
+
 	#undef RUNTIME_FN
 }
 
@@ -30,6 +32,7 @@ void print_wrapper_code(std::ostream &oss) {
 	oss << "#include <math.h>\n";
 	oss << "#include <morpho/morpho.h>\n";
 	oss << "#include <morpho/object.h>\n";
+	oss << "#include <morpho/strng.h>\n";
 
 	oss << "void printint(int x) {printf(\"%d\\n\", x);}\n";
     oss << "void printfloat(double x) {printf(\"%g\\n\", x);}\n";
@@ -37,4 +40,26 @@ void print_wrapper_code(std::ostream &oss) {
     oss << "void printerr(char x[]) {fprintf(stderr, \"%s\\n\", x);}\n";
 	oss << "void printnil() {printf(\"" << MORPHO_NILSTRING << "\\n\");}\n";
 	oss << "void printstring(char x[]) {printf(\"%s\\n\", x);}\n";
+
+	oss << "inline void add(value a, value b, value *c) {\n";
+	oss << "    if (MORPHO_ISINTEGER(a)) {\n";
+	oss << "        if (MORPHO_ISINTEGER(b)) {\n";
+	oss << "            *c = MORPHO_INTEGER(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETINTEGERVALUE(b));\n";
+	oss << "        } else if (MORPHO_ISFLOAT(b)) {\n";
+	oss << "            *c = MORPHO_FLOAT(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETFLOATVALUE(b));\n";
+	oss << "        }\n";
+	oss << "    } else if (MORPHO_ISFLOAT(a)) {\n";
+	oss << "        if (MORPHO_ISINTEGER(b)) {\n";
+	oss << "            *c = MORPHO_FLOAT(MORPHO_GETFLOATVALUE(a) + MORPHO_GETINTEGERVALUE(b));\n";
+	oss << "        } else if (MORPHO_ISFLOAT(b)) {\n";
+	oss << "            *c = MORPHO_FLOAT(MORPHO_GETFLOATVALUE(a) + MORPHO_GETFLOATVALUE(b));\n";
+	oss << "        }\n";
+	oss << "    } else if (MORPHO_ISSTRING(a)) {\n";
+	oss << "        if (MORPHO_ISSTRING(b)) {\n";
+	oss << "            object_concatenatestring(a, b, c);\n";
+	oss << "        }\n";
+	oss << "    }\n";
+	oss << "    printerr(\"Unsupported types for addition\");\n";
+	oss << "    exit(1);\n";
+	oss << "}\n";
 }
