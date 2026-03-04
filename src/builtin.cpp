@@ -41,22 +41,22 @@ void print_wrapper_code(std::ostream &oss) {
 	oss << "void printnil() {printf(\"" << MORPHO_NILSTRING << "\\n\");}\n";
 	oss << "void printstring(char x[]) {printf(\"%s\\n\", x);}\n";
 
-	oss << "inline void add(value a, value b, value *c) {\n";
+	oss << "inline value add(value a, value b) {\n";
 	oss << "    if (MORPHO_ISINTEGER(a)) {\n";
 	oss << "        if (MORPHO_ISINTEGER(b)) {\n";
-	oss << "            *c = MORPHO_INTEGER(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETINTEGERVALUE(b));\n";
+	oss << "            return MORPHO_INTEGER(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETINTEGERVALUE(b));\n";
 	oss << "        } else if (MORPHO_ISFLOAT(b)) {\n";
-	oss << "            *c = MORPHO_FLOAT(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETFLOATVALUE(b));\n";
+	oss << "            return MORPHO_FLOAT(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETFLOATVALUE(b));\n";
 	oss << "        }\n";
 	oss << "    } else if (MORPHO_ISFLOAT(a)) {\n";
 	oss << "        if (MORPHO_ISINTEGER(b)) {\n";
-	oss << "            *c = MORPHO_FLOAT(MORPHO_GETFLOATVALUE(a) + MORPHO_GETINTEGERVALUE(b));\n";
+	oss << "            return MORPHO_FLOAT(MORPHO_GETFLOATVALUE(a) + MORPHO_GETINTEGERVALUE(b));\n";
 	oss << "        } else if (MORPHO_ISFLOAT(b)) {\n";
-	oss << "            *c = MORPHO_FLOAT(MORPHO_GETFLOATVALUE(a) + MORPHO_GETFLOATVALUE(b));\n";
+	oss << "            return MORPHO_FLOAT(MORPHO_GETFLOATVALUE(a) + MORPHO_GETFLOATVALUE(b));\n";
 	oss << "        }\n";
 	oss << "    } else if (MORPHO_ISSTRING(a)) {\n";
 	oss << "        if (MORPHO_ISSTRING(b)) {\n";
-	oss << "            object_concatenatestring(a, b, c);\n";
+	oss << "            return object_concatenatestring(a, b);\n";
 	oss << "        }\n";
 	oss << "    }\n";
 	oss << "    printerr(\"Unsupported types for addition\");\n";

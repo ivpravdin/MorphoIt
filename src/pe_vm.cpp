@@ -47,7 +47,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
             case OP_ADD:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b], right = reg[c];
-                runtime::add(left, right, &reg[a]);
+                reg[a] = runtime::add(left, right);
                 break;
             /* OPCODE: SUBTRACT
              * 
