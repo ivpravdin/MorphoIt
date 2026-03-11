@@ -15,6 +15,7 @@ namespace runtime {
 	DECL_RUNTIME_FN(void(void), printnil);
 	DECL_RUNTIME_FN(void(void), printunimplemented);
 	DECL_RUNTIME_FN(void(char*), printerr);
+	DECL_RUNTIME_FN(void(char*), printstring);
 	DECL_RUNTIME_FN(void(void *, value), object_print);
 
 	DECL_RUNTIME_FN(double(double, double), pow);
@@ -22,6 +23,7 @@ namespace runtime {
     DECL_RUNTIME_FN(double(double), fabs);
 
 	DECL_RUNTIME_FN(value(value, value), add);
+	DECL_RUNTIME_FN(value(value, int, value*), call);
 
 	#undef DECL_RUNTIME_FN
 }

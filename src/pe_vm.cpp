@@ -12,6 +12,7 @@ using builder::static_var;
 
 dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunction *globalfn) {
     dyn_var<value[255]> reg;
+    dyn_var<value[255]> fn_reg;
     dyn_var<value> left, right;
     
     dyn_var<value[100]> globals;
@@ -229,6 +230,12 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
 
                 if (X_MORPHO_ISFALSE(left)) pc+=DECODE_sBx(bc);
                 break;
+
+            case OP_CALL: // CALL (no support for optional arguments yet)
+                a=DECODE_A(bc); b=DECODE_B(bc);
+                left = reg[a];
+                reg[a]=runtime::call(left, b, reg + a);
+                break;
             case OP_LGL: // LGL
                 a=DECODE_A(bc);
                 b=DECODE_Bx(bc);
@@ -253,6 +260,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 } else if (MORPHO_ISOBJECT(left)) {
                     dyn_var<dyn_object *> objptr = X_MORPHO_GETOBJECT(left);
                     runtime::object_print(0, objptr);
+                    runtime::printstring("");
                 } else {
                     runtime::printerr("Unknown type to print.");
                 }

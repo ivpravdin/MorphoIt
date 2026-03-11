@@ -13,7 +13,8 @@ namespace runtime {
 	RUNTIME_FN(void(void), printnil);
 	RUNTIME_FN(void(void), printunimplemented);
 	RUNTIME_FN(void(char*), printerr);
-	RUNTIME_FN(void(void *, value), object_print);
+	RUNTIME_FN(void(char*), printstring);
+	RUNTIME_FN(void(void*, value), object_print);
 
 	RUNTIME_FN(double(double, double), pow);
 
@@ -21,6 +22,7 @@ namespace runtime {
     RUNTIME_FN(double(double), fabs);
 
 	RUNTIME_FN(value(value, value), add);
+	RUNTIME_FN(value(value, int, value*), call);
 
 	#undef RUNTIME_FN
 }
@@ -33,13 +35,14 @@ void print_wrapper_code(std::ostream &oss) {
 	oss << "#include <morpho/morpho.h>\n";
 	oss << "#include <morpho/object.h>\n";
 	oss << "#include <morpho/strng.h>\n";
+	oss << "#include <morpho/builtin.h>\n";
 
 	oss << "void printint(int x) {printf(\"%d\\n\", x);}\n";
     oss << "void printfloat(double x) {printf(\"%g\\n\", x);}\n";
 	oss << "void printbool(bool x) {printf(\"%s\\n\", x ? \"" << MORPHO_TRUESTRING << "\" : \"" << MORPHO_FALSESTRING << "\");}\n";
     oss << "void printerr(char x[]) {fprintf(stderr, \"%s\\n\", x);}\n";
 	oss << "void printnil() {printf(\"" << MORPHO_NILSTRING << "\\n\");}\n";
-	oss << "void printstring(char x[]) {printf(\"%s\\n\", x);}\n";
+	oss << "void printstring(char *x) {printf(\"%s\\n\", x);}\n";
 
 	oss << "inline value add(value a, value b) {\n";
 	oss << "    if (MORPHO_ISINTEGER(a)) {\n";
@@ -60,6 +63,15 @@ void print_wrapper_code(std::ostream &oss) {
 	oss << "        }\n";
 	oss << "    }\n";
 	oss << "    printerr(\"Unsupported types for addition\");\n";
+	oss << "    exit(1);\n";
+	oss << "}\n";
+
+	oss << "inline value call(value func, int nargs, value *args) {\n";
+	oss << "    if (MORPHO_ISBUILTINFUNCTION(func)) {\n";
+	oss << "        objectbuiltinfunction *f = MORPHO_GETBUILTINFUNCTION(func);\n";
+	oss << "        return (f->function)(NULL, nargs, args);\n";
+	oss << "    }\n";
+	oss << "    printf(\"Attempted to call function of type: %d != %d\", MORPHO_GETTYPE(func), OBJECT_BUILTINFUNCTION);\n";
 	oss << "    exit(1);\n";
 	oss << "}\n";
 }
