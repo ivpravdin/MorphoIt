@@ -9,14 +9,8 @@ namespace runtime {
 	// you can use this macro
 	#define DECL_RUNTIME_FN(signature, fn_name) extern DYNAMIFY_TYPE(signature) fn_name;
 
-	DECL_RUNTIME_FN(void(float), printfloat);
-	DECL_RUNTIME_FN(void(int), printint);
-	DECL_RUNTIME_FN(void(bool), printbool);
-	DECL_RUNTIME_FN(void(void), printnil);
-	DECL_RUNTIME_FN(void(void), printunimplemented);
-	DECL_RUNTIME_FN(void(char*), printerr);
-	DECL_RUNTIME_FN(void(char*), printstring);
-	DECL_RUNTIME_FN(void(void *, value), object_print);
+	DECL_RUNTIME_FN(void(char *), printerr);
+	DECL_RUNTIME_FN(void(value), print);
 
 	DECL_RUNTIME_FN(double(double, double), pow);
 	DECL_RUNTIME_FN(double(double), round);

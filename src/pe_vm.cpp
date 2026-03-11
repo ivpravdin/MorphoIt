@@ -12,7 +12,6 @@ using builder::static_var;
 
 dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunction *globalfn) {
     dyn_var<value[255]> reg;
-    dyn_var<value[255]> fn_reg;
     dyn_var<value> left, right;
     
     dyn_var<value[100]> globals;
@@ -249,21 +248,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
             case OP_PRINT: // PRINT
                 a=DECODE_A(bc);
                 left=reg[a];
-                if (MORPHO_ISINTEGER(left)) {
-                    runtime::printint( X_MORPHO_GETINTEGERVALUE(left) );
-                } else if (MORPHO_ISFLOAT(left)) {
-                    runtime::printfloat( X_MORPHO_GETFLOATVALUE(left) );
-                } else if (MORPHO_ISBOOL(left)) {
-                    runtime::printbool(X_MORPHO_GETBOOLVALUE(left));
-                } else if (MORPHO_ISNIL(left)) {
-                    runtime::printnil();
-                } else if (MORPHO_ISOBJECT(left)) {
-                    dyn_var<dyn_object *> objptr = X_MORPHO_GETOBJECT(left);
-                    runtime::object_print(0, objptr);
-                    runtime::printstring("");
-                } else {
-                    runtime::printerr("Unknown type to print.");
-                }
+                runtime::print(left);
                 break;
             case OP_END: // END
                 return EXIT_SUCCESS;    
