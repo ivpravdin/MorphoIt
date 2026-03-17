@@ -48,7 +48,7 @@ void print_wrapper_code(std::ostream &oss) {
 	oss << "    } else if (MORPHO_ISNIL(val)) {\n";
 	oss << "        printnil();\n";
 	oss << "    } else if (MORPHO_ISSTRING(val)) {\n";
-	oss << "        printstring(MORPHO_GETSTRING(val));\n";
+	oss << "        printstring(MORPHO_GETCSTRING(val));\n";
 	oss << "    } else if (MORPHO_ISOBJECT(val)) {\n";
 	oss << "        object_print(0, MORPHO_GETOBJECT(val));\n";
 	oss << "        printstring(\"\");\n";
