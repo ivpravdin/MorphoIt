@@ -5,6 +5,17 @@
 #include "builder/dyn_var.h"
 #include "morpho_header.h"
 
+typedef uint8_t pe_t;
+constexpr pe_t PE_ERR_T = 1;
+constexpr pe_t PE_NIL_T = 2;
+constexpr pe_t PE_BOOL_T = 4;
+constexpr pe_t PE_INT_T = 8;
+constexpr pe_t PE_FLOAT_T = 16;
+constexpr pe_t PE_CMPLX_T = 32;
+constexpr pe_t PE_OBJ_T = 64;
+constexpr pe_t PE_DYN_T = 128;
+
+
 #define DYNAMIFY_TYPE(type) builder::dyn_var<type>
 
 // static cast
@@ -41,8 +52,8 @@ static inline DYNAMIFY_TYPE(double) x_valuetodouble(DYNAMIFY_TYPE(value) num) {
 /** Conversion of a float to an integer with rounding */
 #define X_MORPHO_FLOATTOINTEGER(x) (X_MORPHO_INTEGER((int) round(X_MORPHO_GETFLOATVALUE((x)))))
 
-DYNAMIFY_TYPE(int) x_morpho_comparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
-DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
+DYNAMIFY_TYPE(int) x_morpho_comparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b, builder::static_var<pe_t> types);
+DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b, builder::static_var<pe_t> atype, builder::static_var<pe_t> btype);
 
 struct dyn_object {
     static constexpr const char* type_name = "object";

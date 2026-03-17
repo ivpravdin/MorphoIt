@@ -19,6 +19,9 @@ namespace runtime {
 	DECL_RUNTIME_FN(value(value, value), add);
 	DECL_RUNTIME_FN(value(value, int, value*), call);
 
+	DECL_RUNTIME_FN(int(value, value), morpho_extendedcomparevalue);
+	DECL_RUNTIME_FN(int(value, value), morpho_comparevalue);
+
 	#undef DECL_RUNTIME_FN
 }
 

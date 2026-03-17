@@ -10,8 +10,8 @@
 using builder::dyn_var;
 using builder::static_var;
 
-#define NUM_REGISTERS 255
-#define NUM_GLOBALS 100
+constexpr size_t NUM_REGISTERS = 255;
+constexpr size_t NUM_GLOBALS   = 100;
 // typedef enum {
 //     ERR = 0,
 //     NIL,
@@ -23,15 +23,6 @@ using builder::static_var;
 //     DYN
 // } pe_t;
 
-typedef uint8_t pe_t;
-constexpr pe_t PE_ERR_T = 1;
-constexpr pe_t PE_NIL_T = 2;
-constexpr pe_t PE_BOOL_T = 4;
-constexpr pe_t PE_INT_T = 8;
-constexpr pe_t PE_FLOAT_T = 16;
-constexpr pe_t PE_CMPLX_T = 32;
-constexpr pe_t PE_OBJ_T = 64;
-constexpr pe_t PE_DYN_T = 128;
 
 static_var<pe_t> value2petype(static_var<value> v) {
     if (MORPHO_ISFLOAT(v)) {
@@ -198,6 +189,25 @@ dyn_var<value> op_div_dyn(dyn_var<value> left, dyn_var<value> right) {
     return MORPHO_NIL;
 }
 
+dyn_var<value> op_div(dyn_var<value> left, dyn_var<value> right, static_var<pe_t> ltype, static_var<pe_t> rtype) {
+    if (ltype == PE_FLOAT_T) {
+        if (rtype == PE_FLOAT_T)
+            return X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) / X_MORPHO_GETFLOATVALUE(right));
+        else if (rtype == PE_INT_T)
+            return X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) / (double) X_MORPHO_GETINTEGERVALUE(right));
+        // else // (right_type is DYN) ...
+    } else if (ltype == PE_INT_T) {
+        if (rtype == PE_FLOAT_T)
+            return X_MORPHO_FLOAT((double)X_MORPHO_GETINTEGERVALUE(left) / (double)X_MORPHO_GETINTEGERVALUE(right));
+        else if (rtype == PE_INT_T)
+            return X_MORPHO_FLOAT((double)X_MORPHO_GETINTEGERVALUE(left) / (double)X_MORPHO_GETINTEGERVALUE(right));
+        // else // right_type is DYN
+    }
+
+    return op_div_dyn(left, right);
+}
+
+
 dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunction *globalfn) {
     dyn_var<value[NUM_REGISTERS]> reg;
     dyn_var<value[NUM_GLOBALS]> globals;
@@ -208,13 +218,11 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
     static_var<int32_t> a, b, c;
     static_var<int32_t> bc;
     static_var<int32_t> pc = 0;
-
+/**/ 
     while (pc < n) {
         bc = instructions[pc];
         switch (DECODE_OP(bc)) {
-            /* OPCODE: NO-OP
-             * [COMPLETE]
-             */
+
             case OP_NOP:
                 break;
 
@@ -229,12 +237,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 reg[a] = globalfn->konst.data[b];
                 reg_type[a] = value2petype(globalfn->konst.data[b]);
                 break;
-            /* OPCODE: ADD
-             * 
-             * To-Do:
-             *      - Finish string concatenation?
-             *      - Object operator redirection
-             */
+
             case OP_ADD:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
@@ -250,11 +253,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
  
                 reg[a] = op_add(reg[b], reg[c], reg_type[b], reg_type[c]);
                 break;
-            /* OPCODE: SUBTRACT
-             * 
-             * To-Do:
-             *      - Object operator redirection
-             */
+
             case OP_SUB:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
@@ -266,11 +265,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
 
                 reg[a] = op_sub(reg[b], reg[c], reg_type[b], reg_type[c]);
                 break;
-            /* OPCODE: MULTIPLY
-             * 
-             * To-Do:
-             *      - Object operator redirection
-             */
+
             case OP_MUL:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
@@ -282,11 +277,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
 
                 reg[a] = op_mul(reg[b], reg[c], reg_type[b], reg_type[c]);
                 break;
-            /* OPCODE: DIVIDE
-             * 
-             * To-Do:
-             *      - Object operator redirection
-             */
+
             case OP_DIV:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
@@ -300,21 +291,17 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
 
                 reg[a] = op_div_dyn(reg[b], reg[c]);
                 break;
-            /* OPCODE: POW
-             * 
-             * To-Do:
-             *      - Verify implementation?
-             *      - Object operator redirection
-             */
+
             case OP_POW: //POW
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
                 if (!  (reg_type[b] & (PE_DYN_T | PE_INT_T | PE_FLOAT_T)
                     || (reg_type[c] & (PE_DYN_T | PE_INT_T | PE_FLOAT_T)) ))
                 {
-                    runtime::printerr("Type error in OP_DIV");
+                    runtime::printerr("Type error in OP_POW");
                     return EXIT_FAILURE;
                 }
+                // TODO!
                 reg_type[a] = PE_FLOAT_T;
 
                 // OPREDIRECT(powselector, powrselector, a);
@@ -323,23 +310,36 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
             case OP_EQ:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
-                reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(reg[b], reg[c]));
+                // TODO replace with extendedcompareval
+                reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(reg[b], reg[c], reg_type[b], reg_type[c]));
                 reg_type[a] = PE_BOOL_T;
                 break;
             case OP_NEQ:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
-                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(reg[b], reg[c]));
-                // reg_type[a] = PE_BOOL_T;
+                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(reg[b], reg[c], reg_type[b], reg_type[c]));
+                reg_type[a] = PE_BOOL_T;
                 break;
             case OP_NOT:
                 a=DECODE_A(bc); b=DECODE_B(bc);
+                if (reg_type[b] == PE_BOOL_T) {
+                    reg[a] = X_MORPHO_BOOL(!X_MORPHO_GETBOOLVALUE(reg[b]));
+                    break;
+                } else if (reg_type[b] == PE_NIL_T) {
+                    reg[a] = X_MORPHO_BOOL(true);
+                    break;
+                } else if (reg_type[b] != PE_DYN_T) {
+                    reg[a] = X_MORPHO_BOOL(false);
+                    break;
+                }
 
                 if (MORPHO_ISBOOL(reg[b])) {
                     reg[a] = X_MORPHO_BOOL(!X_MORPHO_GETBOOLVALUE(reg[b]));
                 } else if (MORPHO_ISNIL(reg[b])) {
                     reg[a] = X_MORPHO_BOOL(MORPHO_ISNIL(reg[b]));
                 }
+                reg[a] = X_MORPHO_BOOL(false);
+
                 reg_type[a] = PE_BOOL_T;
                 break;
             case OP_LT: //LT
@@ -351,7 +351,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 //     OPERROR("Compare");
                 // }
 
-                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(reg[b], reg[c]) > MORPHO_EQUAL);
+                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(reg[b], reg[c], reg_type[b], reg_type[c]) > MORPHO_EQUAL);
                 reg_type[a] = PE_BOOL_T;
                 break;
             case OP_LE: //LT
@@ -361,7 +361,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 //        (MORPHO_ISFLOAT(right) || MORPHO_ISINTEGER(right)) ) ) {
                 //     OPERROR("Compare");
                 // }
-                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(reg[b], reg[c]) >= MORPHO_EQUAL);
+                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(reg[b], reg[c], reg_type[b], reg_type[c]) >= MORPHO_EQUAL);
                 reg_type[a] = PE_BOOL_T;
                 break;
             case OP_B: // B
@@ -382,7 +382,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
             case OP_CALL: // CALL (no support for optional arguments yet)
                 a=DECODE_A(bc); b=DECODE_B(bc);
                 reg[a]=runtime::call(reg[a], b, reg + a);
-                // reg_type[a]= pe_t::DYN;
+                reg_type[a]= PE_DYN_T;
                 break;
             case OP_LGL: // LGL
                 a=DECODE_A(bc);
@@ -408,7 +408,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
         }
 
         pc++;
-    }
+    } //*/
     runtime::printerr("Program counter exceeded bytecode buffer. Exiting.");
     return EXIT_FAILURE;
 }
