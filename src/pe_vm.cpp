@@ -85,6 +85,24 @@ dyn_var<value> op_add_dyn(dyn_var<value> left, dyn_var<value> right) {
     return MORPHO_NIL;
 }
 
+dyn_var<value> op_add(dyn_var<value> left, dyn_var<value> right, static_var<pe_t> ltype, static_var<pe_t> rtype) {
+    if (ltype == PE_FLOAT_T) {
+        if (rtype == PE_FLOAT_T)
+            return X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) + X_MORPHO_GETFLOATVALUE(right));
+        else if (rtype == PE_INT_T)
+            return X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) + X_MORPHO_GETINTEGERVALUE(right));
+        // else // (right_type is DYN) ...
+    } else if (ltype == PE_INT_T) {
+        if (rtype == PE_FLOAT_T)
+            return X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) + X_MORPHO_GETFLOATVALUE(right));
+        else if (rtype == PE_INT_T)
+            return X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) + X_MORPHO_GETINTEGERVALUE(right));
+        // else // right_type is DYN
+    }
+
+    return runtime::add(left, right);
+}
+
 dyn_var<value> op_sub_dyn(dyn_var<value> left, dyn_var<value> right) {
     if (MORPHO_ISFLOAT(left)) {
         if (MORPHO_ISFLOAT(right)) {
@@ -169,10 +187,10 @@ dyn_var<value> op_div_dyn(dyn_var<value> left, dyn_var<value> right) {
         }
     } else if (MORPHO_ISINTEGER(left)) {
         if (MORPHO_ISFLOAT(right)) {
-            return X_MORPHO_FLOAT( X_MORPHO_GETINTEGERVALUE(left) / X_MORPHO_GETFLOATVALUE(right));
+            return X_MORPHO_FLOAT((double)X_MORPHO_GETINTEGERVALUE(left) / X_MORPHO_GETFLOATVALUE(right));
         } else if (MORPHO_ISINTEGER(right)) {
             // TODO  I think this is actually not right
-            return X_MORPHO_INTEGER( X_MORPHO_GETINTEGERVALUE(left) / X_MORPHO_GETINTEGERVALUE(right));
+            return X_MORPHO_FLOAT((double)X_MORPHO_GETINTEGERVALUE(left) / (double)X_MORPHO_GETINTEGERVALUE(right));
         }
     }
 
@@ -222,11 +240,15 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
 
                 reg_type[a] = integralBinOpTypeRule(reg_type[b], reg_type[c]);
                 // pair of obj/dyns exception for string on string case
-                if ((reg_type[b] | reg_type[c]) & (PE_OBJ_T | PE_DYN_T)) {
+                if ((reg_type[b] & (PE_OBJ_T | PE_DYN_T)) || (reg_type[b] & (PE_OBJ_T | PE_DYN_T)) ) {
                     reg_type[a] = PE_DYN_T;
                 }
+                if (reg_type[a] == PE_ERR_T) {
+                    runtime::printerr("Type error in OP_ADD");
+                    return EXIT_FAILURE;
+                }
  
-                reg[a] = runtime::add(reg[b], reg[c]);
+                reg[a] = op_add(reg[b], reg[c], reg_type[b], reg_type[c]);
                 break;
             /* OPCODE: SUBTRACT
              * 
@@ -235,10 +257,11 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
              */
             case OP_SUB:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
-                reg_type[a] = integralBinOpTypeRule(reg_type[b], reg_type[c]);
 
+                reg_type[a] = integralBinOpTypeRule(reg_type[b], reg_type[c]);
                 if (reg_type[a] == PE_ERR_T) {
                     runtime::printerr("Type error in OP_SUB");
+                    return EXIT_FAILURE;
                 }
 
                 reg[a] = op_sub(reg[b], reg[c], reg_type[b], reg_type[c]);
@@ -250,10 +273,10 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
              */
             case OP_MUL:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
-                reg_type[a] = integralBinOpTypeRule(reg_type[b], reg_type[c]);
 
+                reg_type[a] = integralBinOpTypeRule(reg_type[b], reg_type[c]);
                 if (reg_type[a] == PE_ERR_T) {
-                    runtime::printerr("Type error in OP_SUB");
+                    runtime::printerr("Type error in OP_MUL");
                     return EXIT_FAILURE;
                 }
 
@@ -267,36 +290,30 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
             case OP_DIV:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
+                reg_type[a] = integralBinOpTypeRule(reg_type[b], reg_type[c]);
+                if (reg_type[a] == PE_ERR_T) {
+                    runtime::printerr("Type error in OP_DIV");
+                    return EXIT_FAILURE;
+                }
+                // div can actually only return float, but I wanna reuse the binop fn
+                reg_type[a] = PE_FLOAT_T;
+
                 reg[a] = op_div_dyn(reg[b], reg[c]);
                 break;
-        //     /* OPCODE: POW
-        //      * 
-        //      * To-Do:
-        //      *      - Verify implementation?
-        //      *      - Object operator redirection
-        //      */
+            /* OPCODE: POW
+             * 
+             * To-Do:
+             *      - Verify implementation?
+             *      - Object operator redirection
+             */
             case OP_POW: //POW
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
-                if (MORPHO_ISFLOAT(reg[b])) {
-                    if (MORPHO_ISFLOAT(reg[c])) {
-                        reg[a] = X_MORPHO_FLOAT( runtime::pow(X_MORPHO_GETFLOATVALUE(reg[b]), X_MORPHO_GETFLOATVALUE(reg[c])) );
-                        break;
-                    } else if (MORPHO_ISINTEGER(reg[c])) {
-                        reg[a] = X_MORPHO_FLOAT( runtime::pow(X_MORPHO_GETFLOATVALUE(reg[b]), S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(reg[c])) ));
-                        break;
-                    }
-                } else if (MORPHO_ISINTEGER(reg[b])) {
-                    if (MORPHO_ISFLOAT(reg[c])) {
-                        reg[a] = X_MORPHO_FLOAT( runtime::pow(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(reg[b])),
-                                                            X_MORPHO_GETFLOATVALUE(reg[c])) );
-                        break;
-                    } else if (MORPHO_ISINTEGER(reg[c])) {
-                        reg[a] =
-                            X_MORPHO_FLOAT( runtime::pow(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(reg[b])),
-                                                        S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(reg[c]))));
-                        break;
-                    }
+                if (!  (reg_type[b] & (PE_DYN_T | PE_INT_T | PE_FLOAT_T)
+                    || (reg_type[c] & (PE_DYN_T | PE_INT_T | PE_FLOAT_T)) ))
+                {
+                    runtime::printerr("Type error in OP_DIV");
+                    return EXIT_FAILURE;
                 }
                 reg_type[a] = PE_FLOAT_T;
 
@@ -307,7 +324,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
 
                 reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(reg[b], reg[c]));
-                // reg_type[a] = PE_BOOL_T;
+                reg_type[a] = PE_BOOL_T;
                 break;
             case OP_NEQ:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
@@ -320,7 +337,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
 
                 if (MORPHO_ISBOOL(reg[b])) {
                     reg[a] = X_MORPHO_BOOL(!X_MORPHO_GETBOOLVALUE(reg[b]));
-                } else {
+                } else if (MORPHO_ISNIL(reg[b])) {
                     reg[a] = X_MORPHO_BOOL(MORPHO_ISNIL(reg[b]));
                 }
                 reg_type[a] = PE_BOOL_T;
