@@ -11,14 +11,17 @@ namespace runtime {
 	RUNTIME_FN(void(value), print);
 
 	RUNTIME_FN(double(double, double), pow);
-
 	RUNTIME_FN(double(double), round);
     RUNTIME_FN(double(double), fabs);
 
-	RUNTIME_FN(value(value, value), add);
-	RUNTIME_FN(value(value, int, value*), call);
 	RUNTIME_FN(int(value, value), morpho_extendedcomparevalue);
+
+	RUNTIME_FN(value(value, value), op_add);
+	RUNTIME_FN(value(value, value), op_sub);
+	RUNTIME_FN(value(value, value), op_mul);
 	RUNTIME_FN(value(value, value), op_div);
+	RUNTIME_FN(value(value, value), op_pow);
+	RUNTIME_FN(value(value, int, value*), call);
 
 	#undef RUNTIME_FN
 }
