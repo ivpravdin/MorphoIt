@@ -170,14 +170,14 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(left, right));
+                reg[a] = X_MORPHO_BOOL(!runtime::morpho_extendedcomparevalue(left, right));
                 break;
             case OP_NEQ:
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right));
+                reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right));
                 break;
             case OP_NOT:
                 a=DECODE_A(bc); b=DECODE_B(bc);
@@ -200,7 +200,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 //     OPERROR("Compare");
                 // }
 
-                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right) > MORPHO_EQUAL);
+                reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right) > MORPHO_EQUAL);
                 break;
             case OP_LE: //LT
                 a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
@@ -211,7 +211,7 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
                 //        (MORPHO_ISFLOAT(right) || MORPHO_ISINTEGER(right)) ) ) {
                 //     OPERROR("Compare");
                 // }
-                reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right) >= MORPHO_EQUAL);
+                reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right) >= MORPHO_EQUAL);
                 break;
             case OP_B: // B
                 b=DECODE_sBx(bc);
