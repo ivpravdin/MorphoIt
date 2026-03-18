@@ -16,7 +16,11 @@ namespace runtime {
 	DECL_RUNTIME_FN(double(double), round);
     DECL_RUNTIME_FN(double(double), fabs);
 
-	DECL_RUNTIME_FN(value(value, value), add);
+	DECL_RUNTIME_FN(value(value, value), op_add);
+	DECL_RUNTIME_FN(value(value, value), op_sub);
+	DECL_RUNTIME_FN(value(value, value), op_mul);
+	DECL_RUNTIME_FN(value(value, value), op_div);
+	DECL_RUNTIME_FN(value(value, value), op_pow);
 	DECL_RUNTIME_FN(value(value, int, value*), call);
 
 	#undef DECL_RUNTIME_FN

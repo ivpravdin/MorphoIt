@@ -34,7 +34,7 @@ void print(value val) {
     }
 }
 
-inline value add(value a, value b) {
+inline value op_add(value a, value b) {
     if (MORPHO_ISINTEGER(a)) {
         if (MORPHO_ISINTEGER(b)) {
             return MORPHO_INTEGER(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETINTEGERVALUE(b));
@@ -53,6 +53,92 @@ inline value add(value a, value b) {
         }
     }
     printerr("Unsupported types for addition");
+    exit(1);
+}
+
+inline value op_sub(value left, value right) {
+    if (MORPHO_ISFLOAT(left)) {
+        if (MORPHO_ISFLOAT(right)) {
+            return MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) - MORPHO_GETFLOATVALUE(right));
+        } else if (MORPHO_ISINTEGER(right)) {
+            return MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) - MORPHO_GETINTEGERVALUE(right));
+        }
+    } else if (MORPHO_ISINTEGER(left)) {
+        if (MORPHO_ISFLOAT(right)) {
+            return MORPHO_FLOAT( MORPHO_GETINTEGERVALUE(left) - MORPHO_GETFLOATVALUE(right));
+        } else if (MORPHO_ISINTEGER(right)) {
+            return MORPHO_INTEGER( MORPHO_GETINTEGERVALUE(left) - MORPHO_GETINTEGERVALUE(right));
+        }
+    }
+
+    // type error...
+    printerr("Unsupported types for sub");
+    exit(1);
+}
+
+inline value op_mul(value left, value right) {
+    if (MORPHO_ISFLOAT(left)) {
+        if (MORPHO_ISFLOAT(right)) {
+            return MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) * MORPHO_GETFLOATVALUE(right));
+        } else if (MORPHO_ISINTEGER(right)) {
+            return MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) * MORPHO_GETINTEGERVALUE(right));
+        }
+    } else if (MORPHO_ISINTEGER(left)) {
+        if (MORPHO_ISFLOAT(right)) {
+            return MORPHO_FLOAT( MORPHO_GETINTEGERVALUE(left) * MORPHO_GETFLOATVALUE(right));
+        } else if (MORPHO_ISINTEGER(right)) {
+            return MORPHO_INTEGER( MORPHO_GETINTEGERVALUE(left) * MORPHO_GETINTEGERVALUE(right));
+        }
+    }
+
+    // type error...
+    printerr("Unsupported types for mul");
+    exit(1);
+}
+
+inline value op_div(value left, value right) {
+    if (MORPHO_ISFLOAT(left)) {
+        if (MORPHO_ISFLOAT(right))
+            return MORPHO_FLOAT(MORPHO_GETFLOATVALUE(left) /
+                                    MORPHO_GETFLOATVALUE(right));
+        else if (MORPHO_ISINTEGER(right))
+            return MORPHO_FLOAT(MORPHO_GETFLOATVALUE(left) /
+                                    (double) MORPHO_GETINTEGERVALUE(right));
+        // else // (right_type is DYN) ...
+    } else if (MORPHO_ISINTEGER(left)) {
+        if (MORPHO_ISFLOAT(right))
+            return MORPHO_FLOAT((double) MORPHO_GETINTEGERVALUE(left) /
+                                    MORPHO_GETFLOATVALUE(right));
+        else if (MORPHO_ISINTEGER(right))
+            return MORPHO_FLOAT((double) MORPHO_GETINTEGERVALUE(left) /
+                                    (double) MORPHO_GETINTEGERVALUE(right));
+        // else // right_type is DYN
+    }
+    printerr("Unsupported types for div");
+    exit(1);
+}
+
+inline value op_pow(value left, value right) {
+    if (MORPHO_ISFLOAT(left)) {
+        if (MORPHO_ISFLOAT(right)) {
+            return MORPHO_FLOAT( pow(MORPHO_GETFLOATVALUE(left), 
+                                                MORPHO_GETFLOATVALUE(right)) );
+        } else if (MORPHO_ISINTEGER(right)) {
+            return MORPHO_FLOAT( pow(MORPHO_GETFLOATVALUE(left),
+                                                (double) MORPHO_GETINTEGERVALUE(right)) );
+        }
+    } else if (MORPHO_ISINTEGER(left)) {
+        if (MORPHO_ISFLOAT(right)) {
+            return MORPHO_FLOAT( pow((double) MORPHO_GETINTEGERVALUE(left),
+                                                MORPHO_GETFLOATVALUE(right) ));
+        } else if (MORPHO_ISINTEGER(right)) {
+            return MORPHO_FLOAT( pow((double) MORPHO_GETINTEGERVALUE(left),
+                                                (double) MORPHO_GETINTEGERVALUE(right)));
+        }
+    }
+
+    // type error
+    printerr("Unsupported types for pow");
     exit(1);
 }
 
