@@ -22,73 +22,10 @@ namespace runtime {
 	#undef RUNTIME_FN
 }
 
+constexpr char header[] = {
+	#embed "header.c"
+	, '\0'
+};
 void print_wrapper_code(std::ostream &oss) {
-	oss << "#include <stdio.h>\n";
-	oss << "#include <stdlib.h>\n";
-    oss << "#include <stdbool.h>\n";
-	oss << "#include <math.h>\n";
-	oss << "#include <morpho/morpho.h>\n";
-	oss << "#include <morpho/object.h>\n";
-	oss << "#include <morpho/strng.h>\n";
-	oss << "#include <morpho/builtin.h>\n";
-	oss << "#include <morpho/metafunction.h>\n";
-
-	oss << "void printint(int x) {printf(\"%d\\n\", x);}\n";
-    oss << "void printfloat(double x) {printf(\"%g\\n\", x);}\n";
-	oss << "void printbool(bool x) {printf(\"%s\\n\", x ? \"" << MORPHO_TRUESTRING << "\" : \"" << MORPHO_FALSESTRING << "\");}\n";
-    oss << "void printerr(char x[]) {fprintf(stderr, \"%s\\n\", x);}\n";
-	oss << "void printnil() {printf(\"" << MORPHO_NILSTRING << "\\n\");}\n";
-	oss << "void printstring(char *x) {printf(\"%s\\n\", x);}\n";
-	oss << "void print(value val) {\n";
-	oss << "    if (MORPHO_ISINTEGER(val)) {\n";
-	oss << "        printint(MORPHO_GETINTEGERVALUE(val));\n";
-	oss << "    } else if (MORPHO_ISFLOAT(val)) {\n";
-	oss << "        printfloat(MORPHO_GETFLOATVALUE(val));\n";
-	oss << "    } else if (MORPHO_ISBOOL(val)) {\n";
-	oss << "        printbool(MORPHO_GETBOOLVALUE(val));\n";
-	oss << "    } else if (MORPHO_ISNIL(val)) {\n";
-	oss << "        printnil();\n";
-	oss << "    } else if (MORPHO_ISSTRING(val)) {\n";
-	oss << "        printstring(MORPHO_GETCSTRING(val));\n";
-	oss << "    } else if (MORPHO_ISOBJECT(val)) {\n";
-	oss << "        object_print(0, MORPHO_GETOBJECT(val));\n";
-	oss << "        printstring(\"\");\n";
-	oss << "    } else {\n";
-	oss << "        printerr(\"Unknown type to print\");\n";
-	oss << "    }\n";
-	oss << "}\n";
-
-	oss << "inline value add(value a, value b) {\n";
-	oss << "    if (MORPHO_ISINTEGER(a)) {\n";
-	oss << "        if (MORPHO_ISINTEGER(b)) {\n";
-	oss << "            return MORPHO_INTEGER(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETINTEGERVALUE(b));\n";
-	oss << "        } else if (MORPHO_ISFLOAT(b)) {\n";
-	oss << "            return MORPHO_FLOAT(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETFLOATVALUE(b));\n";
-	oss << "        }\n";
-	oss << "    } else if (MORPHO_ISFLOAT(a)) {\n";
-	oss << "        if (MORPHO_ISINTEGER(b)) {\n";
-	oss << "            return MORPHO_FLOAT(MORPHO_GETFLOATVALUE(a) + MORPHO_GETINTEGERVALUE(b));\n";
-	oss << "        } else if (MORPHO_ISFLOAT(b)) {\n";
-	oss << "            return MORPHO_FLOAT(MORPHO_GETFLOATVALUE(a) + MORPHO_GETFLOATVALUE(b));\n";
-	oss << "        }\n";
-	oss << "    } else if (MORPHO_ISSTRING(a)) {\n";
-	oss << "        if (MORPHO_ISSTRING(b)) {\n";
-	oss << "            return object_concatenatestring(a, b);\n";
-	oss << "        }\n";
-	oss << "    }\n";
-	oss << "    printerr(\"Unsupported types for addition\");\n";
-	oss << "    exit(1);\n";
-	oss << "}\n";
-
-	oss << "inline value call(value func, int nargs, value *args) {\n";
-	oss << "    if (MORPHO_ISMETAFUNCTION(func)) {\n";
-	oss << "        metafunction_resolve(MORPHO_GETMETAFUNCTION(func), nargs, args + 1, NULL, &func);\n";
-	oss << "    }\n";
-	oss << "    if (MORPHO_ISBUILTINFUNCTION(func)) {\n";
-	oss << "        objectbuiltinfunction *f = MORPHO_GETBUILTINFUNCTION(func);\n";
-	oss << "        return (f->function)(NULL, nargs, args);\n";
-	oss << "    }\n";
-	oss << "    printf(\"Attempted to call function of type: %lld != %d\", MORPHO_GETTYPE(func), OBJECT_BUILTINFUNCTION);\n";
-	oss << "    exit(1);\n";
-	oss << "}\n";
+	oss << header;
 }
