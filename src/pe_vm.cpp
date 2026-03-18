@@ -152,25 +152,25 @@ dyn_var<value> op_mul(dyn_var<value> left, dyn_var<value> right, static_var<pe_t
     return op_mul_dyn(left, right);
 }
 
-dyn_var<value> op_div_dyn(dyn_var<value> left, dyn_var<value> right) {
-    if (MORPHO_ISFLOAT(left)) {
-        if (MORPHO_ISFLOAT(right)) {
-            return X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) / X_MORPHO_GETFLOATVALUE(right));
-        } else if (MORPHO_ISINTEGER(right)) {
-            return X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) / X_MORPHO_GETINTEGERVALUE(right));
-        }
-    } else if (MORPHO_ISINTEGER(left)) {
-        if (MORPHO_ISFLOAT(right)) {
-            return X_MORPHO_FLOAT(X_MORPHO_GETINTEGERVALUE(left) / X_MORPHO_GETFLOATVALUE(right));
-        } else if (MORPHO_ISINTEGER(right)) {
-            // TODO  I think this is actually not right
-            return X_MORPHO_FLOAT(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(left)) / X_MORPHO_GETINTEGERVALUE(right));
-        }
-    }
+// dyn_var<value> op_div_dyn(dyn_var<value> left, dyn_var<value> right) {
+//     if (MORPHO_ISFLOAT(left)) {
+//         if (MORPHO_ISFLOAT(right)) {
+//             return X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) / X_MORPHO_GETFLOATVALUE(right));
+//         } else if (MORPHO_ISINTEGER(right)) {
+//             return X_MORPHO_FLOAT( X_MORPHO_GETFLOATVALUE(left) / X_MORPHO_GETINTEGERVALUE(right));
+//         }
+//     } else if (MORPHO_ISINTEGER(left)) {
+//         if (MORPHO_ISFLOAT(right)) {
+//             return X_MORPHO_FLOAT(X_MORPHO_GETINTEGERVALUE(left) / X_MORPHO_GETFLOATVALUE(right));
+//         } else if (MORPHO_ISINTEGER(right)) {
+//             // TODO  I think this is actually not right
+//             return X_MORPHO_FLOAT(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(left)) / X_MORPHO_GETINTEGERVALUE(right));
+//         }
+//     }
 
-    // type error...
-    return MORPHO_NIL;
-}
+//     // type error...
+//     return MORPHO_NIL;
+// }
 
 dyn_var<value> op_div(dyn_var<value> left, dyn_var<value> right, static_var<pe_t> ltype, static_var<pe_t> rtype) {
     if (ltype == PE_FLOAT_T) {
@@ -187,26 +187,27 @@ dyn_var<value> op_div(dyn_var<value> left, dyn_var<value> right, static_var<pe_t
         // else // right_type is DYN
     }
 
-    return op_div_dyn(left, right);
+    return runtime::op_div(left, right);
 }
 
+// does not work!
 dyn_var<value> op_pow_dyn(dyn_var<value> left, dyn_var<value> right) {
     if (MORPHO_ISFLOAT(left)) {
-        if (MORPHO_ISFLOAT(right))
-            return X_MORPHO_FLOAT(runtime::pow(X_MORPHO_GETFLOATVALUE(left), 
-                                               X_MORPHO_GETFLOATVALUE(right)));
-        else if (MORPHO_ISINTEGER(right))
-            return X_MORPHO_FLOAT(runtime::pow(X_MORPHO_GETFLOATVALUE(left), 
-                                               S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(right))));
-        // else // (right_type is DYN) ...
+        if (MORPHO_ISFLOAT(right)) {
+            return X_MORPHO_FLOAT( runtime::pow(X_MORPHO_GETFLOATVALUE(left), 
+                                                X_MORPHO_GETFLOATVALUE(right)) );
+        } else if (MORPHO_ISINTEGER(right)) {
+            return X_MORPHO_FLOAT( runtime::pow(X_MORPHO_GETFLOATVALUE(left), 
+                                                S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(right)) ));
+        }
     } else if (MORPHO_ISINTEGER(left)) {
-        if (MORPHO_ISFLOAT(right))
-            return X_MORPHO_FLOAT(runtime::pow(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(left)), 
-                                               X_MORPHO_GETFLOATVALUE(right)));
-        else if (MORPHO_ISINTEGER(right))
-            return X_MORPHO_FLOAT(runtime::pow(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(left)), 
-                                               S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(right))));
-        // else // right_type is DYN
+        if (MORPHO_ISFLOAT(right)) {
+            return X_MORPHO_FLOAT( runtime::pow(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(left)),
+                                                X_MORPHO_GETFLOATVALUE(right)) );
+        } else if (MORPHO_ISINTEGER(right)) {
+            return X_MORPHO_FLOAT( runtime::pow(S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(left)),
+                                                S_CAST_DYN_VAR(double, X_MORPHO_GETINTEGERVALUE(right))));
+        }
     }
 
     // type error

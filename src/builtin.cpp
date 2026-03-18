@@ -18,6 +18,7 @@ namespace runtime {
 	RUNTIME_FN(value(value, value), add);
 	RUNTIME_FN(value(value, int, value*), call);
 	RUNTIME_FN(int(value, value), morpho_extendedcomparevalue);
+	RUNTIME_FN(value(value, value), op_div);
 
 	#undef RUNTIME_FN
 }

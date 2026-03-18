@@ -67,3 +67,23 @@ inline value call(value func, int nargs, value *args) {
     printf("Attempted to call function of type: %lld != %d", MORPHO_GETTYPE(func), OBJECT_BUILTINFUNCTION);
     exit(1);
 }
+
+inline value op_div(value left, value right) {
+    if (MORPHO_ISFLOAT(left)) {
+    if (MORPHO_ISFLOAT(right))
+        return MORPHO_FLOAT(pow(MORPHO_GETFLOATVALUE(left),
+                                MORPHO_GETFLOATVALUE(right)));
+    else if (MORPHO_ISINTEGER(right))
+        return MORPHO_FLOAT(pow(MORPHO_GETFLOATVALUE(left),
+                                (double) MORPHO_GETINTEGERVALUE(right)));
+    // else // (right_type is DYN) ...
+    } else if (MORPHO_ISINTEGER(left)) {
+        if (MORPHO_ISFLOAT(right))
+            return MORPHO_FLOAT(pow((double) MORPHO_GETINTEGERVALUE(left),
+                                    MORPHO_GETFLOATVALUE(right)));
+        else if (MORPHO_ISINTEGER(right))
+            return MORPHO_FLOAT(pow((double) MORPHO_GETINTEGERVALUE(left),
+                                    (double) MORPHO_GETINTEGERVALUE(right)));
+        // else // right_type is DYN
+    }
+}
