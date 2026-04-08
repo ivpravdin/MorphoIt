@@ -5,6 +5,6 @@
 
 #include "morpho_header.h"
 
-builder::dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunction *globalfn);
+builder::dyn_var<value> morpho_vm(const int n, const uint32_t instructions[], objectfunction *globalfn);
 
 #endif // PE_VM_H

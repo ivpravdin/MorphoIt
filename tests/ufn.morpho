@@ -1,0 +1,6 @@
+fn myfn() {
+  print(1)
+}
+
+myfn()
+
