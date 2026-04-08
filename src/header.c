@@ -142,6 +142,15 @@ inline value op_pow(value left, value right) {
     exit(1);
 }
 
+inline value op_not(value left) {
+
+    if (MORPHO_ISBOOL(left)) {
+        return MORPHO_BOOL(!MORPHO_GETBOOLVALUE(left));
+    } else {
+        return MORPHO_BOOL(MORPHO_ISNIL(left));
+    }
+}
+
 inline value call(value func, int nargs, value *args) {
     if (MORPHO_ISMETAFUNCTION(func)) {
         metafunction_resolve(MORPHO_GETMETAFUNCTION(func), nargs, args + 1, NULL, &func);

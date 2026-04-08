@@ -23,6 +23,7 @@ namespace runtime {
 	DECL_RUNTIME_FN(value(value, value), op_mul);
 	DECL_RUNTIME_FN(value(value, value), op_div);
 	DECL_RUNTIME_FN(value(value, value), op_pow);
+	DECL_RUNTIME_FN(value(value), op_not);
 	DECL_RUNTIME_FN(value(value, int, value*), call);
 
 	#undef DECL_RUNTIME_FN

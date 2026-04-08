@@ -21,6 +21,7 @@ namespace runtime {
 	RUNTIME_FN(value(value, value), op_mul);
 	RUNTIME_FN(value(value, value), op_div);
 	RUNTIME_FN(value(value, value), op_pow);
+	RUNTIME_FN(value(value), op_not);
 	RUNTIME_FN(value(value, int, value*), call);
 
 	#undef RUNTIME_FN
