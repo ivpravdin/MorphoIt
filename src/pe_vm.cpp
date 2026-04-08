@@ -38,7 +38,8 @@ dyn_var<int> morpho_vm(const int n, const uint32_t instructions[], objectfunctio
             case OP_MOV:
                 a=DECODE_A(bc); b=DECODE_B(bc);
                 reg[a] = reg[b];
-                reg_stat[a] = reg_stat[b];
+                if (reg_stat[b] != -1)
+                    reg_stat[a] = reg_stat[b];
                 break;
 
             case OP_LCT:
