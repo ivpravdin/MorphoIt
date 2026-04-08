@@ -1,60 +1,50 @@
 #!/usr/bin/env python3
 
+import argparse
 import subprocess as sp
 import sys
-import argparse
-from colored import stylize, fg, Style
 from pathlib import Path
-from time import time
+from time import perf_counter
 
 USE_DEFAULT_FILENAME = 1
 EXE_EXTENSION = ".exe" if sys.platform == "win32" else ".bin"
 
 
 def morphoit_print(x):
-    print(stylize("[MORPHOIT]", fg("blue"), Style.bold), x, file=sys.stderr)
+    print("[MORPHOIT]", x, file=sys.stderr)
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "FILE",
-    help="path to the Morpho source file to be transpiled; "
-    "'-' for stdin, which will cause FILE to be treated "
-    "as _stdin.morpho for default filename purposes",
+    help="path to the Morpho source file to transpile; "
+    "use '-' to read from stdin",
 )
 parser.add_argument(
-    "-o",
-    "--output",
-    help="path to the produced binary. Defaults to FILE.bin or FILE.exe",
+    "-o", "--output",
+    help="path to produced executable (default: FILE.bin/.exe)",
 )
 parser.add_argument(
-    "-T", "--transpilation-executable", help="path to the Morpho-to-C transpiler"
+    "-T", "--transpilation-executable",
+    help="path to Morpho-to-C transpiler",
 )
 parser.add_argument(
-    "-t",
-    "--transpilation-file",
+    "-t", "--transpilation-file",
     nargs="?",
     const=USE_DEFAULT_FILENAME,
-    help="location to save the result of the transpilation;"
-    " by default it is not saved at all. If this option is "
-    "present with no argument provided, defaults to FILE.c",
+    help="save generated C (default FILE.c if flag given without arg)",
 )
 parser.add_argument(
-    "-d",
-    "--no-run",
+    "-d", "--no-run",
     action="store_true",
-    help="don't automatically run the produced binary",
+    help="compile but do not run",
 )
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument(
-    "-p",
-    "--profile",
+    "-p", "--profile",
     action="store_true",
-    help="show time taken to transpile/compile/run the program",
+    help="show timing info",
 )
-# parser.add_argument('-c', '--compiler-args',
-#                     help='options to pass to the compiler')
-
 
 args = parser.parse_args()
 VERBOSE = args.verbose
@@ -62,106 +52,117 @@ PROFILE = args.profile
 DRY_RUN = args.no_run
 
 SRC_FILE = args.FILE
-OUTPUT_FILE = args.output
 TRANSE_EXE = args.transpilation_executable
 TRANS_FILE = args.transpilation_file
 
-# the morphoit binary
+overall_start = perf_counter() if PROFILE else None
+
 transpilerpath = Path("build/morphoit")
 if TRANSE_EXE is not None:
     transpilerpath = Path(TRANSE_EXE)
 transpilerpath = transpilerpath.resolve()
 
 if not transpilerpath.is_file():
-    morphoit_print(
-        "Could not find executable for partial evaluator binary "
-        f"({str(transpilerpath)})"
-    )
-    exit(1)
+    morphoit_print(f"Missing transpiler: {transpilerpath}")
+    sys.exit(1)
 
-# .morpho file to be transpiled
+stdin_data = None
 if SRC_FILE != "-":
     srcpath = Path(SRC_FILE).resolve()
     basefilename = srcpath.name
 
     if not srcpath.is_file():
-        morphoit_print("No such file '" + SRC_FILE + "', exiting.")
-        exit(1)
+        morphoit_print(f"No such file '{SRC_FILE}'")
+        sys.exit(1)
 else:
-    srcpath = SRC_FILE
+    srcpath = "-"
     basefilename = "_stdin.morpho"
+    stdin_data = sys.stdin.buffer.read()
 
-# binary produced by compiling transpiled C code
 binpath = Path(basefilename + EXE_EXTENSION)
-if args.output is not None:
+if args.output:
     binpath = Path(args.output)
 binpath = binpath.resolve()
 
-# .c file that is the result of the transpilation
 ircodepath = None
-if args.transpilation_file is not None:
+if TRANS_FILE is not None:
     if TRANS_FILE == USE_DEFAULT_FILENAME:
         ircodepath = Path(basefilename + ".c")
     else:
-        ircodepath = Path(args.transpilation_file)
+        ircodepath = Path(TRANS_FILE)
     ircodepath = ircodepath.resolve()
 
 if VERBOSE:
-    morphoit_print("Morpho-to-C transpiler executable path: " + str(transpilerpath))
-    morphoit_print("Morpho sourcecode path: " + str(srcpath))
-    morphoit_print("Produced executable path: " + str(binpath))
-    morphoit_print("Transpiled code path: " + str(ircodepath))
-    morphoit_print("Args Object: " + str(args))
+    morphoit_print(f"Transpiler: {transpilerpath}")
+    morphoit_print(f"Source: {srcpath}")
+    morphoit_print(f"Executable: {binpath}")
+    morphoit_print(f"C output: {ircodepath}")
 
-
+# --- Transpilation ---
 trans_cmd = [str(transpilerpath), str(srcpath)]
-if VERBOSE:
-    morphoit_print("Transpilation command: " + str(trans_cmd))
 
 if PROFILE:
-    trans_start_time = time()
-trans_proc = sp.run(trans_cmd, stdout=sp.PIPE)
+    trans_start = perf_counter()
+
+trans_proc = (
+    sp.run(trans_cmd, stdout=sp.PIPE)
+    if stdin_data is None
+    else sp.run(trans_cmd, input=stdin_data, stdout=sp.PIPE)
+)
+
 if PROFILE:
-    trans_stop_time = time()
-    morphoit_print(f"Transpilation time (s): {trans_stop_time - trans_start_time}")
+    morphoit_print(f"Transpilation time (s): {perf_counter() - trans_start:.6f}")
+
 if trans_proc.returncode != 0:
-    morphoit_print(f"Morpho-to-C transpilation failed. Exiting.")
-    exit(1)
+    morphoit_print("Transpilation failed")
+    sys.exit(1)
 
+if ircodepath:
+    with open(ircodepath, "wb") as f:
+        f.write(trans_proc.stdout)
 
-if ircodepath is not None:
-    with open(str(ircodepath), "wb") as file:
-        file.write(trans_proc.stdout)
-
+# --- Compilation ---
 comp_cmd = [
     "cc",
-    "-x",
-    "c",
+    "-x", "c",
     "-Wno-incompatible-pointer-types",
     "-O3",
     "-",
-    "-o",
-    str(binpath),
+    "-o", str(binpath),
 ]
 
-if VERBOSE:
-    morphoit_print("Compilation command: " + str(comp_cmd))
 if PROFILE:
-    comp_start_time = time()
+    comp_start = perf_counter()
+
 comp_proc = sp.run(comp_cmd, input=trans_proc.stdout)
+
 if PROFILE:
-    comp_stop_time = time()
-    morphoit_print(f"Compilation time (s): {comp_stop_time - comp_start_time}")
+    morphoit_print(f"Compilation time (s): {perf_counter() - comp_start:.6f}")
+
 if comp_proc.returncode != 0:
-    morphoit_print("C compilation failed. Exiting.")
-    exit(1)
+    morphoit_print("Compilation failed")
+    sys.exit(1)
 
-
+# --- Execution ---
+run_elapsed = 0.0
 if not DRY_RUN:
     if PROFILE:
-        run_start_time = time()
-    run_proc = sp.run([binpath])
+        run_start = perf_counter()
+
+    run_proc = sp.run([str(binpath)])
+
     if PROFILE:
-        run_stop_time = time()
-        morphoit_print(f"Run time (s): {run_stop_time - run_stop_time}")
-    exit(run_proc.returncode)
+        run_elapsed = perf_counter() - run_start
+        morphoit_print(f"Run time (s): {run_elapsed:.6f}")
+
+    rc = run_proc.returncode
+else:
+    rc = 0
+
+if PROFILE:
+    total_elapsed = perf_counter() - overall_start
+    # Machine-readable markers for the benchmark script:
+    print(f"__MI_TOTAL__ {total_elapsed:.9f}", file=sys.stderr)
+    print(f"__MI_RUN__ {run_elapsed:.9f}", file=sys.stderr)
+
+sys.exit(rc)
