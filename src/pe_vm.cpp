@@ -13,44 +13,37 @@ using builder::static_var;
 constexpr size_t NUM_REGS = 255;
 constexpr size_t NUM_GLOBALS = 100;
 
-dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfunction *globalfn) {
+dyn_var<value> morpho_vm(const int n, const instruction * const instructions, const objectfunction * const globalfn) {
     dyn_var<value[NUM_REGS]> reg;
     // dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);
     dyn_var<value> left, right;
 
     dyn_var<value[NUM_GLOBALS]> globals; // = builder::with_name("globals", true);
-    // dyn_var<value[NUM_GLOBALS]> globals;
 
     // WARNING: BUILDIT SAYS THESE SHOULD BE STATIC SINCE THEY MUTATE BUT THAT CAUSES
     // INFINITE LOOPING ISSUES
-    size_t reg_stat[NUM_REGS];
-    size_t globals_stat[NUM_GLOBALS];
+    value reg_stat[NUM_REGS];
+    value globals_stat[NUM_GLOBALS];
 
-    static_var<int32_t> a, b, c;
-    static_var<int32_t> bc;
     static_var<instruction> pc = globalfn->entry;
 
     while (pc < n) {
-        bc = instructions[pc];
+        const instruction bc = instructions[pc];
+        const int32_t a = DECODE_A(bc), b = DECODE_B(bc), c = DECODE_C(bc), bx = DECODE_Bx(bc), sbx = DECODE_sBx(bc);
         switch (DECODE_OP(bc)) {
-            /* OPCODE: NO-OP
-             * [COMPLETE]
-             */
             case OP_NOP:
                 break;
 
             case OP_MOV:
-                a=DECODE_A(bc); b=DECODE_B(bc);
                 reg[a] = reg[b];
                 if (MORPHO_ISFUNCTION(reg_stat[b]))
                     reg_stat[a] = reg_stat[b];
                 break;
 
             case OP_LCT:
-                a=DECODE_A(bc); b=DECODE_Bx(bc);
-                reg[a] = globalfn->konst.data[b];
-                if (MORPHO_ISFUNCTION(globalfn->konst.data[b])) {
-                    reg_stat[a] = globalfn->konst.data[b];
+                reg[a] = globalfn->konst.data[bx];
+                if (MORPHO_ISFUNCTION(globalfn->konst.data[bx])) {
+                    reg_stat[a] = globalfn->konst.data[bx];
                 }
                 break;
             /* OPCODE: ADD
@@ -60,7 +53,6 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
              *      - Object operator redirection
              */
             case OP_ADD:
-                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b], right = reg[c];
                 reg[a] = runtime::op_add(left, right);
                 break;
@@ -70,7 +62,6 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
              *      - Object operator redirection
              */
             case OP_SUB:
-                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b], right = reg[c];
 
                 reg[a] = runtime::op_sub(left, right);
@@ -98,7 +89,6 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
              *      - Object operator redirection
              */
             case OP_MUL:
-                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b], right = reg[c];
                 reg[a] = runtime::op_mul(left, right);
 
@@ -126,7 +116,6 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
              *      - Object operator redirection
              */
             case OP_DIV:
-                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b], right = reg[c];
                 reg[a] = runtime::op_div(left, right);
 
@@ -155,7 +144,6 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
              *      - Object operator redirection
              */
             case OP_POW: //POW
-                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
                 right = reg[c];
                 reg[a] = runtime::op_pow(left, right);
@@ -185,21 +173,18 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
             //     // OPERROR("Exponentiate")
             //     break;
             case OP_EQ:
-                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(!runtime::morpho_extendedcomparevalue(left, right));
                 break;
             case OP_NEQ:
-                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right));
                 break;
             case OP_NOT:
-                a=DECODE_A(bc); b=DECODE_B(bc);
                 left = reg[b];
 
                 reg[a] = runtime::op_not(left);
@@ -211,7 +196,6 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
                 // }
                 break;
             case OP_LT: //LT
-                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
                 right = reg[c];
 
@@ -224,7 +208,6 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
                 reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right) > MORPHO_EQUAL);
                 break;
             case OP_LE: //LT
-                a=DECODE_A(bc); b=DECODE_B(bc); c=DECODE_C(bc);
                 left = reg[b];
                 right = reg[c];
                 // TODO: Type Errors
@@ -235,24 +218,20 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
                 reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right) >= MORPHO_EQUAL);
                 break;
             case OP_B: // B
-                b=DECODE_sBx(bc);
-                pc+=b;
+                pc+=sbx;
                 break;
             case OP_BIF: // BIF
-                a=DECODE_A(bc);
                 left=reg[a];
 
-                if (X_MORPHO_ISTRUE(left)) pc+=DECODE_sBx(bc);
+                if (X_MORPHO_ISTRUE(left)) pc+=sbx;
                 break;
             case OP_BIFF: // BIFF
-                a=DECODE_A(bc);
                 left=reg[a];
 
-                if (X_MORPHO_ISFALSE(left)) pc+=DECODE_sBx(bc);
+                if (X_MORPHO_ISFALSE(left)) pc+=sbx;
                 break;
 
             case OP_CALL: // CALL (no support for optional arguments yet)
-                a=DECODE_A(bc); b=DECODE_B(bc);
                 left = reg[a];
                 if (!MORPHO_ISBUILTINFUNCTION(reg_stat[a]) && !MORPHO_ISMETAFUNCTION(reg_stat[a])) {
                     // TODO: this does not handle functions as returned values
@@ -261,22 +240,26 @@ dyn_var<value> morpho_vm(const int n, const instruction instructions[], objectfu
                     reg[a]=runtime::call(left, b, reg + a);
                 }
                 break;
+            case OP_RETURN:
+                if (a>0) {
+                    return reg[b];
+                } else {
+                    return MORPHO_NIL; /* No return value; returns nil */
+                }
+                break;
             case OP_LGL: // LGL
-                a=DECODE_A(bc);
-                b=DECODE_Bx(bc);
-                reg[a]=globals[b];
-                if (MORPHO_ISFUNCTION(globals_stat[b]))
-                    reg_stat[a] = globals_stat[b];
+                reg[a]=globals[bx];
+                if (MORPHO_ISFUNCTION(globals_stat[bx])) {
+                    reg_stat[a] = globals_stat[bx];
+                }
                 break;
             case OP_SGL: // SGL
-                a=DECODE_A(bc);
-                b=DECODE_Bx(bc);
-                globals[b]=reg[a];
-                if (MORPHO_ISFUNCTION(reg_stat[b]))
-                    globals_stat[a] = reg_stat[b];
+                globals[bx]=reg[a];
+                if (MORPHO_ISFUNCTION(reg_stat[a])) {
+                    globals_stat[bx] = reg_stat[a];
+                }
                 break;
             case OP_PRINT: // PRINT
-                a=DECODE_A(bc);
                 left=reg[a];
                 runtime::print(left);
                 break;
