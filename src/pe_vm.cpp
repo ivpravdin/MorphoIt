@@ -25,10 +25,15 @@ dyn_var<value> morpho_vm_rec(
     dyn_var<value> left, right;
 
 
-    // WARNING: BUILDIT SAYS THESE SHOULD BE STATIC SINCE THEY MUTATE BUT THAT CAUSES
-    // INFINITE LOOPING ISSUES
-    value reg_stat[NUM_REGS];
-    value globals_stat[NUM_GLOBALS];
+    // This doesn't seem to cause infinite loops
+    static_var<value> reg_stat[NUM_REGS];
+    for (static_var<size_t> i = 0; i < NUM_REGS; i++) {
+        reg_stat[i] = MORPHO_NIL;
+    }
+    static_var<value> globals_stat[NUM_GLOBALS];
+    for (static_var<size_t> i = 0; i < NUM_GLOBALS; i++) {
+        globals_stat[i] = MORPHO_NIL;
+    }
 
     static_var<instruction> pc = globalfn->entry;
 
@@ -124,7 +129,6 @@ dyn_var<value> morpho_vm_rec(
             case OP_LT: //LT
                 left = reg[b];
                 right = reg[c];
-
 
                 reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right) > MORPHO_EQUAL);
                 break;
