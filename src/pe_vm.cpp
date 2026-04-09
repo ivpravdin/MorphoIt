@@ -233,7 +233,8 @@ dyn_var<value> morpho_vm(const int n, const instruction * const instructions, co
 
             case OP_CALL: // CALL (no support for optional arguments yet)
                 left = reg[a];
-                if (!MORPHO_ISBUILTINFUNCTION(reg_stat[a]) && !MORPHO_ISMETAFUNCTION(reg_stat[a])) {
+                // in theory should also handle closures
+                if (MORPHO_ISFUNCTION(reg_stat[a])) {
                     // TODO: this does not handle functions as returned values
                     reg[a] = morpho_vm(n, instructions, MORPHO_GETFUNCTION(reg_stat[a]));
                 } else {
