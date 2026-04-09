@@ -83,7 +83,13 @@ int main(int argc, char* argv[]) {
         }
         else {
             std::ofstream file(TMP_C_FILE);
-            auto ast = context.extract_function_ast(morpho_vm, "main_morpho", ninstructions, bytecode, globalfn);
+            auto ast = context.extract_function_ast(
+                morpho_vm,
+                "main_morpho",
+                ninstructions,
+                bytecode,
+                globalfn
+            );
             print_wrapper_code(file);
             block::c_code_generator::generate_code(ast, file, 0);
             file.close();
