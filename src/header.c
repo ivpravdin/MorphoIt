@@ -13,7 +13,7 @@ void printint(int x) {printf("%d\n", x);}
 void printfloat(double x) {printf("%g\n", x);}
 void printbool(bool x) {printf("%s\n", x ? MORPHO_TRUESTRING : MORPHO_FALSESTRING);}
 void printerr(char x[]) {fprintf(stderr, "%s\n", x);}
-void printnil() {printf("MORPHO_NILSTRING\n");}
+void printnil() {printf("%s\n", MORPHO_NILSTRING);}
 void printstring(char *x) {printf("%s\n", x);}
 void print(value val) {
     if (MORPHO_ISINTEGER(val)) {
