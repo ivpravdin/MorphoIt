@@ -53,7 +53,7 @@ inline value op_add(value a, value b) {
         }
     }
     printerr("Unsupported types for addition");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 inline value op_sub(value left, value right) {
@@ -73,7 +73,7 @@ inline value op_sub(value left, value right) {
 
     // type error...
     printerr("Unsupported types for sub");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 inline value op_mul(value left, value right) {
@@ -93,7 +93,7 @@ inline value op_mul(value left, value right) {
 
     // type error...
     printerr("Unsupported types for mul");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 inline value op_div(value left, value right) {
@@ -115,7 +115,7 @@ inline value op_div(value left, value right) {
         // else // right_type is DYN
     }
     printerr("Unsupported types for div");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 inline value op_pow(value left, value right) {
@@ -139,7 +139,7 @@ inline value op_pow(value left, value right) {
 
     // type error
     printerr("Unsupported types for pow");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 inline value op_not(value left) {
@@ -160,5 +160,5 @@ inline value call(value func, int nargs, value *args) {
         return (f->function)(NULL, nargs, args);
     }
     printf("Attempted to call function of type: %lld != %d", MORPHO_GETTYPE(func), OBJECT_BUILTINFUNCTION);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
