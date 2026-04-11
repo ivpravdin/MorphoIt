@@ -1,6 +1,17 @@
-fn myfn() {
-  print(1)
+fn hello_or_goodbye(x) {
+    if (x) {
+        return "hello"
+    } else {
+        return "goodbye"
+    }
 }
 
-myfn()
+fn myprint(str) {
+    print str
+}
+
+var w = " world"
+myprint(hello_or_goodbye(true) + w)
+myprint(hello_or_goodbye(false) + w)
+
 
