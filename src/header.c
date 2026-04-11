@@ -9,9 +9,12 @@
 #include <morpho/metafunction.h>
 #include <morpho/common.h>
 
+// TODO: there's gotta be a better way to do this
+#include "/home/fisherman/Documents/Code/capstone/MorphoIt/src/pe_vm_consts.h"
 
+value globals[PE_NUM_GLOBALS];
 
-void printint(int x) {printf("%d\n", x);}
+void printint(int32_t x) {printf("%d\n", x);}
 void printfloat(double x) {printf("%g\n", x);}
 void printbool(bool x) {printf("%s\n", x ? MORPHO_TRUESTRING : MORPHO_FALSESTRING);}
 void printerr(char x[]) {fprintf(stderr, "%s\n", x);}
@@ -153,6 +156,18 @@ inline value op_not(value left) {
     }
 }
 
+typedef value (*userfn)(const value const*, int32_t, int32_t);
+inline value call_userfn(const value *const reg, int32_t a, int32_t b, int32_t c) {
+    // GETOBJECT just unwraps a pointer, really, but instead of an obj here
+    // it's a ptr to a function. Or should be if we load the register correctly
+    userfn f = *((userfn*)(MORPHO_GETOBJECT(reg[a])));
+    const value *const args = reg + a;
+    int n_pos_args = b;
+    int n_opt_args = c;
+    return f(args, n_pos_args, n_opt_args);
+}
+
+
 inline value call(value func, int nargs, value *args) {
     if (MORPHO_ISMETAFUNCTION(func)) {
         metafunction_resolve(MORPHO_GETMETAFUNCTION(func), nargs, args + 1, NULL, &func);
@@ -165,13 +180,3 @@ inline value call(value func, int nargs, value *args) {
     exit(EXIT_FAILURE);
 }
 
-typedef value (*userfn)(const value const*, int, int, value *);
-inline value call_userfn(const value *const reg, int a, int b, int c, value *globals) {
-    // GETOBJECT just unwraps a pointer, really, but instead of an obj here
-    // it's a ptr to a function. Or should be if we load the register correctly
-    userfn f = *((userfn*)(MORPHO_GETOBJECT(reg[a])));
-    const value *const args = reg + a;
-    int n_pos_args = b;
-    int n_opt_args = c;
-    return f(args, n_pos_args, n_opt_args, globals);
-}
