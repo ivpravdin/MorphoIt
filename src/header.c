@@ -9,6 +9,8 @@
 #include <morpho/metafunction.h>
 #include <morpho/common.h>
 
+
+
 void printint(int x) {printf("%d\n", x);}
 void printfloat(double x) {printf("%g\n", x);}
 void printbool(bool x) {printf("%s\n", x ? MORPHO_TRUESTRING : MORPHO_FALSESTRING);}
@@ -161,4 +163,15 @@ inline value call(value func, int nargs, value *args) {
     }
     printf("Attempted to call function of type: %lld != %d", MORPHO_GETTYPE(func), OBJECT_BUILTINFUNCTION);
     exit(EXIT_FAILURE);
+}
+
+typedef value (*userfn)(const value const*, int, int, value *);
+inline value call_userfn(const value *const reg, int a, int b, int c, value *globals) {
+    // GETOBJECT just unwraps a pointer, really, but instead of an obj here
+    // it's a ptr to a function. Or should be if we load the register correctly
+    userfn f = *((userfn*)(MORPHO_GETOBJECT(reg[a])));
+    const value *const args = reg + a;
+    int n_pos_args = b;
+    int n_opt_args = c;
+    return f(args, n_pos_args, n_opt_args, globals);
 }

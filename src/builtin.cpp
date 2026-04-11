@@ -23,6 +23,7 @@ namespace runtime {
 	RUNTIME_FN(value(value, value), op_pow);
 	RUNTIME_FN(value(value), op_not);
 	RUNTIME_FN(value(value, int, value*), call);
+	RUNTIME_FN(value(const value *const, int, int, int, value *), call_userfn);
 
 	#undef RUNTIME_FN
 }

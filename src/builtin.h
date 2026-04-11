@@ -25,6 +25,7 @@ namespace runtime {
 	DECL_RUNTIME_FN(value(value, value), op_pow);
 	DECL_RUNTIME_FN(value(value), op_not);
 	DECL_RUNTIME_FN(value(value, int, value*), call);
+	DECL_RUNTIME_FN(value(const value *const, int, int, int, value *), call_userfn);
 
 	#undef DECL_RUNTIME_FN
 }
