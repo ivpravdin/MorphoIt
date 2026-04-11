@@ -11,7 +11,7 @@
 
 #include "morpho_header.h"
 #include "pe_vm.h"
-#include "builtin.h"
+#include "runtime.h"
 
 #define TMP_C_FILE "/tmp/pe_out.c"
 

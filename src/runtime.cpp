@@ -1,6 +1,8 @@
-#include "builtin.h"
+#include "runtime.h"
 
 #include <value.h>
+
+#include "pe_vm_consts.h"
 
 namespace runtime {
 	// If the function name exposed to buildit will be the same as the one appearing in transpiled code,
@@ -29,6 +31,8 @@ namespace runtime {
 }
 
 constexpr char header[] = {
+	#embed "pe_vm_consts.h"
+	, '\n',
 	#embed "header.c"
 	, '\0'
 };

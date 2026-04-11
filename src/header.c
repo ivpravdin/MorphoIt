@@ -9,8 +9,14 @@
 #include <morpho/metafunction.h>
 #include <morpho/common.h>
 
-// TODO: there's gotta be a better way to do this
-#include "/home/fisherman/Documents/Code/capstone/MorphoIt/src/pe_vm_consts.h"
+// pe_vm_consts.h is inserted inline when runtime generates the header
+// since it's not a system library header. This is here for IntelliSense
+#ifndef PE_VM_CONSTS_H
+#include "pe_vm_consts.h"
+#endif
+
+// this actually gets inserted by runtime.cpp
+// this is just here for intellisense
 
 value globals[PE_NUM_GLOBALS];
 
