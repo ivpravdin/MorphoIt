@@ -6,46 +6,30 @@
 #include "builder/dyn_var.h"
 #include "builder/static_var.h"
 
+#include "pe_vm_consts.h"
+
 // Include the BuildIt types
 using builder::dyn_var;
 using builder::static_var;
 using std::vector;
 
-typedef struct vm_return {
-    dyn_var<value> ret_dyn;
-    const value ret_stat;
-} vm_return;
-
-// I don't want this to be a method because that promotes the struct to a class
-// and there is some difference between raw struct "aggregate types" and classes
-// ...I think
-inline vm_return vm_return_with_val(const value v) {
-    return vm_return { .ret_dyn = (v) , .ret_stat = (v) };
-}
-
-constexpr size_t NUM_REGS = 255;
-constexpr size_t NUM_GLOBALS = 100;
-
-
-vm_return morpho_vm_rec(
+dyn_var<value> morpho_vm_rec(
     const int n,
     const instruction * const instructions,
     const objectfunction * const globalfn,
-    dyn_var<value[NUM_GLOBALS]> &globals,
-    static_var<value> globals_stat[],
-    dyn_var<value[NUM_REGS]> &reg,
-    static_var<value> reg_stat[]
+    const dyn_var<value> args[]
 ) {
-    // dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);
-    dyn_var<value> left, right;
+    dyn_var<value[PE_NUM_REGS]> reg = builder::with_name("reg", true);
+    const size_t total_args = globalfn->nargs + globalfn->nopt;
 
-    // const int nregs = globalfn->nregs;
+    // initialize regs with args
+    reg[0] = MORPHO_OBJECT(globalfn);
+    for (static_var<size_t> i = 0; i < total_args; i) {
+        reg[i + 1] = args[i + 1];
+    }
 
-    // This doesn't seem to cause infinite loops
-    // static_var<value> globals_stat[NUM_GLOBALS];
-    // for (static_var<size_t> i = 0; i < NUM_GLOBALS; i++) {
-    //     globals_stat[i] = MORPHO_NIL;
-    // }
+    dyn_var<value[PE_NUM_GLOBALS]> globals = builder::with_name(PE_GLOBALS);
+    dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);
 
     static_var<instruction> pc = globalfn->entry;
 
@@ -58,14 +42,27 @@ vm_return morpho_vm_rec(
 
             case OP_MOV:
                 reg[a] = reg[b];
-                if (MORPHO_ISFUNCTION(reg_stat[b]))
-                    reg_stat[a] = reg_stat[b];
                 break;
 
             case OP_LCT:
-                reg[a] = globalfn->konst.data[bx];
                 if (MORPHO_ISFUNCTION(globalfn->konst.data[bx])) {
-                    reg_stat[a] = globalfn->konst.data[bx];
+                    const objectfunction *const fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
+                    /* IF we don't have syntax tree of function f_xxxxxx:
+                        generate said tree and generate C code definition of f_xxxxxx
+                       ENDIF
+        
+                        Get it to generate C code according to "reg[b] = f_xxxxxx"
+                        Do I care about static registers anymore? HELL NO!!!
+
+                        SO i also need to generate a struct wrapper around the function so that
+                        it is recognizable as a function?
+                     */
+
+                    // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
+                    dyn_var<uintptr_t> fn_ptr = builder::with_name( std::string("user_morpho_") + MORPHO_GETCSTRING(fn->name) );
+                    reg[a] = X_MORPHO_OBJECT(fn_ptr);
+                } else {
+                    reg[a] = globalfn->konst.data[bx];
                 }
                 break;
 
@@ -145,83 +142,83 @@ vm_return morpho_vm_rec(
 
             case OP_CALL: // CALL (no support for optional arguments yet)
                 left = reg[a];
-                // runtime::print(reg[a]);          // print fn at runtime
-                // object_print(NULL, reg_stat[a]); // print fn at PE time
+                // // runtime::print(reg[a]);          // print fn at runtime
+                // // object_print(NULL, reg_stat[a]); // print fn at PE time
     
-                // in theory should also handle closures
-                if (MORPHO_ISFUNCTION(reg_stat[a])) {
-                    const objectfunction *func = MORPHO_GETFUNCTION(reg_stat[a]);
-                    // TODO: this does not handle functions as returned values
-                    dyn_var<value[NUM_REGS]> regswithargs;
-                    static_var<value> regswithargs_stat[NUM_REGS];
-                    // r0 = function object
-                    // I could pass it reg_stat but
-                    // that would be the literal pointer to the function
-                    regswithargs[0] = reg[a]; 
-                    regswithargs_stat[0] = reg_stat[a]; 
-                    // r1..rn = args 1..n
-                    const int32_t n_opt_args = b;
-                    const int32_t n_pos_args = c;
-                    for (static_var<size_t> i = 0; i < n_opt_args + n_pos_args; i++) {
-                        regswithargs[i + 1] = reg[a + 1 + i];
-                        regswithargs_stat[i + 1] = reg_stat[a + 1 + i];
-                    }
-                    // Zero out rest of static regs
-                    for (static_var<size_t> i = n_opt_args + n_pos_args + 1; i < NUM_REGS; i++) {
-                        regswithargs_stat[i] = MORPHO_NIL;
-                    }
+                // // in theory should also handle closures
+                // if (MORPHO_ISFUNCTION(reg_stat[a])) {
+                //     const objectfunction *func = MORPHO_GETFUNCTION(reg_stat[a]);
+                //     // TODO: this does not handle functions as returned values
+                //     dyn_var<value[PE_NUM_REGS]> regswithargs;
+                //     static_var<value> regswithargs_stat[PE_NUM_REGS];
+                //     // r0 = function object
+                //     // I could pass it reg_stat but
+                //     // that would be the literal pointer to the function
+                //     regswithargs[0] = reg[a]; 
+                //     regswithargs_stat[0] = reg_stat[a]; 
+                //     // r1..rn = args 1..n
+                //     const int32_t n_opt_args = b;
+                //     const int32_t n_pos_args = c;
+                //     for (static_var<size_t> i = 0; i < n_opt_args + n_pos_args; i++) {
+                //         regswithargs[i + 1] = reg[a + 1 + i];
+                //         regswithargs_stat[i + 1] = reg_stat[a + 1 + i];
+                //     }
+                //     // Zero out rest of static regs
+                //     for (static_var<size_t> i = n_opt_args + n_pos_args + 1; i < PE_NUM_REGS; i++) {
+                //         regswithargs_stat[i] = MORPHO_NIL;
+                //     }
 
-                    vm_return retv = morpho_vm_rec(
-                        n,
-                        instructions,
-                        func,
-                        globals,
-                        globals_stat,
-                        regswithargs,
-                        regswithargs_stat
-                    );
-                    reg[a] = retv.ret_dyn;
-                    reg_stat[a] = retv.ret_stat;
-                } else {
+                //      /* * reg[b] = runtime::f
+                //      * Is there ANY way to get static vars out of this bitch?
+                //      * I don't think so? But we can make a hash table that converts function objects to 
+                //      * actual functions. Is there any point then in inlining?
+                //     */
+
+                //     vm_return retv = morpho_vm_rec(
+                //         n,
+                //         instructions,
+                //         func,
+                //         globals,
+                //         globals_stat,
+                //         regswithargs,
+                //         regswithargs_stat
+                //     );
+                //     // reg[a] = retv.ret_dyn;
+                //     // reg_stat[a] = retv.ret_stat;
+                // } else {
                     reg[a]=runtime::call(left, b, reg + a);
-                }
+                // }
                 break;
             case OP_RETURN:
                 // ret_stat SHOULD BE A VALID FUNCTION OR NIL
                 // ASSUMING reg_stat IS INITIALIZED TO BE ALL NIL
                 // and we do want it to be well-initialized for static-tagging
                 if (a>0)
-                    return vm_return { .ret_dyn = reg[b] , .ret_stat = reg_stat[b] };
+                    return reg[b];
                 else
-                    return vm_return_with_val(MORPHO_NIL);
+                    return MORPHO_NIL;
                 break;
             case OP_LGL: // LGL
                 reg[a]=globals[bx];
-                if (MORPHO_ISFUNCTION(globals_stat[bx])) {
-                    reg_stat[a] = globals_stat[bx];
-                }
                 break;
             case OP_SGL: // SGL
                 globals[bx]=reg[a];
-                if (MORPHO_ISFUNCTION(reg_stat[a])) {
-                    globals_stat[bx] = reg_stat[a];
-                }
                 break;
             case OP_PRINT: // PRINT
                 left=reg[a];
                 runtime::print(left);
                 break;
             case OP_END: // END
-                return vm_return_with_val(EXIT_SUCCESS);
+                return EXIT_SUCCESS;
             default:
                 runtime::printerr("Encountered unimplemented instruction. Exiting.");
-                return vm_return_with_val(EXIT_FAILURE);
+                return EXIT_FAILURE;
         }
 
         pc++;
     }
     runtime::printerr("Program counter exceeded bytecode buffer. Exiting.");
-    return vm_return_with_val(EXIT_FAILURE);
+    return EXIT_FAILURE;
 }
 
 dyn_var<value> morpho_vm(
@@ -229,35 +226,12 @@ dyn_var<value> morpho_vm(
     const instruction *const instructions,
     const objectfunction *const globalfn
 ) {
-    dyn_var<value[NUM_GLOBALS]> globals = builder::with_name("globals", true);
-    dyn_var<value[NUM_REGS]> reg;
-
-    // const int nregs = globalfn->nregs;
-    // vector<static_var<value>> reg_stat(nregs);
-    // for (static_var<size_t> i = 0; i < nregs; i++) {
-    //     reg_stat[i] = MORPHO_NIL;
-    // }
-    static_var<value> globals_stat[NUM_GLOBALS];
-    for (static_var<size_t> i = 0; i < NUM_GLOBALS; i++) {
-        globals_stat[i] = MORPHO_NIL;
-    }
-
-    // this could be a vector of just the required number of regs?
-    // Idk how variadic arguments play with this. But certainly there is an nregs
-    // field in the function object
-    // I think that's street legal
-    static_var<value> reg_stat[NUM_REGS];
-    for (static_var<size_t> i = 0; i < NUM_REGS; i++) {
-        reg_stat[i] = MORPHO_NIL;
-    }
-
+    // declaration of globals is handled in header.c, no other way to make it
+    // actually global, apparently
     return morpho_vm_rec(
         n,
         instructions,
         globalfn,
-        globals,
-        globals_stat,
-        reg,
-        reg_stat
-    ).ret_dyn;
+        NULL // top level has no args?
+    );
 }
