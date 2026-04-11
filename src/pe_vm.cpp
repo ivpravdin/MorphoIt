@@ -46,7 +46,9 @@ dyn_var<value> morpho_vm_rec(
 
             case OP_LCT:
                 if (MORPHO_ISFUNCTION(globalfn->konst.data[bx])) {
-                    const objectfunction *const fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
+                    const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
+                    
+
                     /* IF we don't have syntax tree of function f_xxxxxx:
                         generate said tree and generate C code definition of f_xxxxxx
                        ENDIF
@@ -59,8 +61,13 @@ dyn_var<value> morpho_vm_rec(
                      */
 
                     // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
-                    dyn_var<uintptr_t> fn_ptr = builder::with_name( std::string("user_morpho_") + MORPHO_GETCSTRING(fn->name) );
-                    reg[a] = X_MORPHO_OBJECT(fn_ptr);
+                    dyn_var<userfn *> fn_ptr = builder::with_name( std::string("user_morpho_") + MORPHO_GETCSTRING(morpho_fn->name) );
+                    dyn_var<struct userfn_object> runtime_fn_obj;
+                    // unfortunately the operator overload on struct equality 
+                    // doesn't work, but we only really care about the type tag
+                    runtime_fn_obj.type = objectfunctiontype;
+                    runtime_fn_obj.fn = fn_ptr;
+                    reg[a] = X_MORPHO_OBJECT(&runtime_fn_obj);
                 } else {
                     reg[a] = globalfn->konst.data[bx];
                 }
@@ -142,8 +149,8 @@ dyn_var<value> morpho_vm_rec(
 
             case OP_CALL: // CALL (no support for optional arguments yet)
                 left = reg[a];
-                // // runtime::print(reg[a]);          // print fn at runtime
-                // // object_print(NULL, reg_stat[a]); // print fn at PE time
+                // // runtime::print(reg[a]);          // print morpho_fn at runtime
+                // // object_print(NULL, reg_stat[a]); // print morpho_fn at PE time
     
                 // // in theory should also handle closures
                 // if (MORPHO_ISFUNCTION(reg_stat[a])) {
@@ -190,9 +197,6 @@ dyn_var<value> morpho_vm_rec(
                 // }
                 break;
             case OP_RETURN:
-                // ret_stat SHOULD BE A VALID FUNCTION OR NIL
-                // ASSUMING reg_stat IS INITIALIZED TO BE ALL NIL
-                // and we do want it to be well-initialized for static-tagging
                 if (a>0)
                     return reg[b];
                 else

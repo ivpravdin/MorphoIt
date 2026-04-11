@@ -1,8 +1,40 @@
-#ifndef PE_VM_CONSTS_H
+#ifndef PE_VM_CONSTS_H//////////////////////////////////////////////////////////
 #define PE_VM_CONSTS_H
 
+// This header exists and is written the way it is so that certain constants
+// and notably the userfn type
+// can be used in both the PE VM and also in the runtime functions defined in
+// header.c
+
+#include <morpho/value.h>
+#include <morpho/object.h>
+
+typedef value (*userfn)(const value *const, int32_t, int32_t);
 #define PE_GLOBALS "globals"
 #define PE_NUM_REGS 255
 #define PE_NUM_GLOBALS 100
 
+
+
+#ifdef RUNTIME_HEADER_C
+    #define STRUCT_FIELD(T, name) T name
+    #define STRUCT_TYPE_ANNOTATION(T)
+#else
+    #include "builder/dyn_var.h"
+    #define STRUCT_FIELD(T, name) builder::dyn_var<T> name = builder::with_name(#name)
+    #define STRUCT_TYPE_ANNOTATION(T) static constexpr const char* type_name = #T
 #endif
+
+struct userfn_object {
+    // TYPE(object *) obj
+    // TYPE(userfn *) fn;
+    STRUCT_FIELD(objecttype, type);
+    STRUCT_FIELD(userfn *, fn);
+    STRUCT_TYPE_ANNOTATION(struct userfn_object);
+};
+
+#undef STRUCT_TYPE
+#undef STRUCT_TYPE_ANNOTATION
+#undef STRUCT_FIELD
+
+#endif // PE_VM_CONSTS_H END ///////////////////////////////////////////////////
