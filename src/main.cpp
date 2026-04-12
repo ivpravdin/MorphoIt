@@ -26,8 +26,8 @@ void* compile_and_load_lib(const char* filepath) {
 void generate_userfn_asts(
     const varray_instruction &code,
     const varray_value &const_table,
-    std::map<uintptr_t, block::stmt::Ptr> &userfn_asts)
-{
+    std::map<uintptr_t, block::stmt::Ptr> &userfn_asts
+) {
     const size_t ninstructions = code.count;
     const instruction *bytecode = (instruction *) code.data;
     const size_t nconsts = const_table.count;
@@ -134,16 +134,27 @@ int main(int argc, char* argv[]) {
 
 
     std::map<uintptr_t, block::stmt::Ptr> userfn_asts;
-    generate_userfn_asts(*code, globalfn->konst, userfn_asts);
+    block::stmt::Ptr ast;
 
-    std::cerr << "[PE'ing main]\n";
-    auto ast = context.extract_function_ast(
-        morpho_vm,
-        "main_morpho",
-            ninstructions,
-            bytecode,
-            globalfn
-    );
+    try {
+        generate_userfn_asts(*code, globalfn->konst, userfn_asts);
+        std::cerr << "[PE'ing main]\n";
+        ast = context.extract_function_ast(
+            morpho_vm,
+            "main_morpho",
+                ninstructions,
+                bytecode,
+                globalfn
+        );
+    } catch (std::exception &e) {
+        std::cerr << "Partial evaluation exited early with error: '"
+                  << e.what()
+                  << "'\n";
+        morpho_freeprogram(p);
+        morpho_freecompiler(c);
+        morpho_finalize();
+        return EXIT_FAILURE;
+    }
 
     print_wrapper_code(out_c_file);
     std::cerr << "[CODE GENERATED]\n";
@@ -171,7 +182,6 @@ int main(int argc, char* argv[]) {
 
     morpho_freeprogram(p);
     morpho_freecompiler(c);
-
     morpho_finalize();
 
 	return EXIT_SUCCESS;

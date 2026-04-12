@@ -1,5 +1,6 @@
 #include "pe_vm.h"
 
+#include <exception>
 #include "builder/dyn_var.h"
 #include "builder/static_var.h"
 
@@ -12,6 +13,21 @@
 using builder::dyn_var;
 using builder::static_var;
 using std::vector;
+class UnimplementedInstructionException: public std::exception
+{
+  virtual const char* what() const throw()
+  {
+    return "Unimplemented instruction encountered.";
+  }
+};
+
+class OutOfBoundsPCException: public std::exception
+{
+  virtual const char* what() const throw()
+  {
+    return "Program counter exceeded bytecode buffer.";
+  }
+};
 
 dyn_var<value> morpho_vm_rec(
     dyn_var<value *> args, // all buildit examples have dyns first, idk why
@@ -53,13 +69,14 @@ dyn_var<value> morpho_vm_rec(
 
             case OP_LCT:
                 if (MORPHO_ISFUNCTION(globalfn->konst.data[bx])) {
-                    // The purpose of the below block is to basically produce
-                    // the C code generated to look like:
+                    // The purpose of the below block is to produce
+                    // the C code that looks like:
                     //
                     //      struct userfn_object var1;
                     //      var1.type = 4;
                     //      var1.fn = morpho_userfn_f;
                     //      unsigned long int var2 = &var1;
+                    //      unsigned long int var3 = MORPHO_OBJECT(var2)
 
                     const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
 
@@ -70,6 +87,10 @@ dyn_var<value> morpho_vm_rec(
                     runtime_fn_obj.fn = fn_ptr;
                     reg[a] = X_MORPHO_OBJECT(&runtime_fn_obj);
                 } else {
+                    // for other objects...
+                    // maybe generate C code equivalent to "get it from the RUNTIME
+                    // constant table!" I think that's perfect
+                    // aside from any objects types want to statically eval
                     reg[a] = globalfn->konst.data[bx];
                 }
                 break;
@@ -216,14 +237,12 @@ dyn_var<value> morpho_vm_rec(
             case OP_END: // END
                 return EXIT_SUCCESS;
             default:
-                runtime::printerr("Encountered unimplemented instruction. Exiting.");
-                return EXIT_FAILURE;
+                throw UnimplementedInstructionException();
         }
 
         pc++;
     }
-    runtime::printerr("Program counter exceeded bytecode buffer. Exiting.");
-    return EXIT_FAILURE;
+    throw OutOfBoundsPCException();
 }
 
 dyn_var<value> morpho_vm(
