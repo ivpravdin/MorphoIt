@@ -6,6 +6,7 @@
 #include "morpho_header.h"
 
 builder::dyn_var<value> morpho_vm(
+    builder::dyn_var<value *> args,
     const int n,
     const uint32_t * const instructions,
     const objectfunction * const globalfn

@@ -14,24 +14,31 @@ using builder::static_var;
 using std::vector;
 
 dyn_var<value> morpho_vm_rec(
+    dyn_var<value *> args, // all buildit examples have dyns first, idk why
     const int n,
     const instruction * const instructions,
-    const objectfunction * const globalfn,
-    const dyn_var<value> args[]
+    const objectfunction * const globalfn
 ) {
     dyn_var<value[PE_NUM_REGS]> reg = builder::with_name("reg", true);
-    const size_t total_args = globalfn->nargs + globalfn->nopt;
-
-    // initialize regs with args
-    reg[0] = MORPHO_OBJECT(globalfn);
-    for (static_var<size_t> i = 0; i < total_args; i) {
-        reg[i + 1] = args[i + 1];
-    }
-
     dyn_var<value[PE_NUM_GLOBALS]> globals = builder::with_name(PE_GLOBALS);
     dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);
-
     static_var<instruction> pc = globalfn->entry;
+
+    // init'ing reg[0]
+    // for now we'll just do this, since, e.g. the globalfn has a NULL name
+    if (MORPHO_ISOBJECT(globalfn->name)) {
+        dyn_var<userfn *> fn_ptr = builder::with_name( std::string(USERFN_NAME_PREFIX) + MORPHO_GETCSTRING(globalfn->name) );
+        dyn_var<struct userfn_object> runtime_fn_obj;
+        runtime_fn_obj.type = objectfunctiontype;
+        runtime_fn_obj.fn = fn_ptr;
+        reg[0] = X_MORPHO_OBJECT(&runtime_fn_obj);
+    }
+
+    // loading args into regs
+    const size_t total_args = globalfn->nargs + globalfn->nopt;
+    for (static_var<size_t> i = 0; i < total_args; i++) {
+        reg[i + 1] = args[i + 1];
+    }
 
     while (pc < n) {
         const instruction bc = instructions[pc];
@@ -46,25 +53,19 @@ dyn_var<value> morpho_vm_rec(
 
             case OP_LCT:
                 if (MORPHO_ISFUNCTION(globalfn->konst.data[bx])) {
+                    // The purpose of the below block is to basically produce
+                    // the C code generated to look like:
+                    //
+                    //      struct userfn_object var1;
+                    //      var1.type = 4;
+                    //      var1.fn = morpho_userfn_f;
+                    //      unsigned long int var2 = &var1;
+
                     const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
-                    
-
-                    /* IF we don't have syntax tree of function f_xxxxxx:
-                        generate said tree and generate C code definition of f_xxxxxx
-                       ENDIF
-        
-                        Get it to generate C code according to "reg[b] = f_xxxxxx"
-                        Do I care about static registers anymore? HELL NO!!!
-
-                        SO i also need to generate a struct wrapper around the function so that
-                        it is recognizable as a function?
-                     */
 
                     // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
-                    dyn_var<userfn *> fn_ptr = builder::with_name( std::string("user_morpho_") + MORPHO_GETCSTRING(morpho_fn->name) );
+                    dyn_var<userfn *> fn_ptr = builder::with_name( std::string(USERFN_NAME_PREFIX) + MORPHO_GETCSTRING(morpho_fn->name) );
                     dyn_var<struct userfn_object> runtime_fn_obj;
-                    // unfortunately the operator overload on struct equality 
-                    // doesn't work, but we only really care about the type tag
                     runtime_fn_obj.type = objectfunctiontype;
                     runtime_fn_obj.fn = fn_ptr;
                     reg[a] = X_MORPHO_OBJECT(&runtime_fn_obj);
@@ -226,16 +227,18 @@ dyn_var<value> morpho_vm_rec(
 }
 
 dyn_var<value> morpho_vm(
+    dyn_var<value *> args,
     const int n,
     const instruction *const instructions,
     const objectfunction *const globalfn
 ) {
+    // std::cerr << "toplevel\n";
     // declaration of globals is handled in header.c, no other way to make it
     // actually global, apparently
     return morpho_vm_rec(
+        args,
         n,
         instructions,
-        globalfn,
-        NULL // top level has no args?
+        globalfn
     );
 }
