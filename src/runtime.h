@@ -4,6 +4,7 @@
 #include <ostream>
 #include "value.h" // <- the local one
 
+constexpr const char USERFN_NAME_PREFIX[] = "morpho_userfn_";
 namespace runtime {
 	// If the function name exposed to buildit will be the same as the one appearing in transpiled code,
 	// you can use this macro

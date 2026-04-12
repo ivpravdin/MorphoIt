@@ -16,9 +16,6 @@
 #include "pe_vm_consts.h"
 #endif
 
-// this actually gets inserted by runtime.cpp
-// this is just here for intellisense
-
 value globals[PE_NUM_GLOBALS];
 
 void printint(int32_t x) {printf("%d\n", x);}

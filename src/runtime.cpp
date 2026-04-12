@@ -36,6 +36,6 @@ constexpr char header[] = {
 	, '\0'
 };
 void print_wrapper_code(std::ostream &oss) {
-	oss << "#define RUNTIME_HEADER_C\n";
+	oss << "#define FOR_RUNTIME\n";
 	oss << header;
 }
