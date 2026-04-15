@@ -44,7 +44,7 @@ void generate_userfn_asts(
             builder::builder_context ctxt;
             auto ast = ctxt.extract_function_ast(
                 morpho_vm,
-                std::string(USERFN_NAME_PREFIX) + MORPHO_GETCSTRING(fn->name),
+                    get_mangled_fn_name(fn),
                     ninstructions,
                     bytecode,
                     fn

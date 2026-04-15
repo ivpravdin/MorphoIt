@@ -43,7 +43,7 @@ dyn_var<value> morpho_vm_rec(
     // init'ing reg[0]
     // for now we'll just do this, since, e.g. the globalfn has a NULL name
     if (MORPHO_ISOBJECT(globalfn->name)) {
-        dyn_var<userfn *> fn_ptr = builder::with_name( std::string(USERFN_NAME_PREFIX) + MORPHO_GETCSTRING(globalfn->name) );
+        dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name(globalfn));
         dyn_var<struct userfn_object> runtime_fn_obj;
         runtime_fn_obj.type = objectfunctiontype;
         runtime_fn_obj.fn = fn_ptr;
@@ -81,7 +81,7 @@ dyn_var<value> morpho_vm_rec(
                     const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
 
                     // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
-                    dyn_var<userfn *> fn_ptr = builder::with_name( std::string(USERFN_NAME_PREFIX) + MORPHO_GETCSTRING(morpho_fn->name) );
+                    dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name(morpho_fn));
                     dyn_var<struct userfn_object> runtime_fn_obj;
                     runtime_fn_obj.type = objectfunctiontype;
                     runtime_fn_obj.fn = fn_ptr;

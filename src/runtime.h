@@ -30,6 +30,7 @@ namespace runtime {
 	#undef DECL_RUNTIME_FN
 }
 
+std::string get_mangled_fn_name(const objectfunction *const fn);
 void print_wrapper_code(std::ostream &oss);
 
 #endif // BUILTIN_H

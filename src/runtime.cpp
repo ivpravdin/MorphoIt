@@ -29,6 +29,16 @@ namespace runtime {
 	#undef RUNTIME_FN
 }
 
+std::string get_mangled_fn_name(const objectfunction *const fn) {
+    std::string name = std::string(USERFN_NAME_PREFIX);
+    if (MORPHO_ISOBJECT(fn->name)) {
+        name += MORPHO_GETCSTRING(fn->name);
+        name += "_";
+    }
+    name += std::to_string((uintptr_t) fn);
+    return std::move(name);
+}
+
 constexpr char header[] = {
 	#embed "pe_vm_consts.h"
 	, '\n',
