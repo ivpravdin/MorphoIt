@@ -4,6 +4,8 @@
 
 #include "pe_vm_consts.h"
 
+#include "generated_header.h"
+
 namespace runtime {
 	// If the function name exposed to buildit will be the same as the one appearing in transpiled code,
 	// you can use this macro
@@ -39,12 +41,8 @@ std::string get_mangled_fn_name(const objectfunction *const fn) {
     return std::move(name);
 }
 
-constexpr char header[] = {
-	#embed "pe_vm_consts.h"
-	, '\n',
-	#embed "runtime_header.c"
-	, '\0'
-};
+
+
 void print_wrapper_code(std::ostream &oss) {
 	oss << "#define FOR_RUNTIME\n";
 	oss << header;

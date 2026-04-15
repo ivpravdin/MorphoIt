@@ -18,7 +18,11 @@
 
 void* compile_and_load_lib(const char* filepath) {
     char cmd[256];
+#ifdef DEBUG
+    snprintf(cmd, sizeof(cmd), "gcc -g -fno-omit-frame-pointer -shared -fPIC -Wno-incompatible-pointer-types -Wno-int-conversion %s -o /tmp/pe_out.so", filepath);
+#else
     snprintf(cmd, sizeof(cmd), "gcc -O3 -shared -fPIC -Wno-incompatible-pointer-types -Wno-int-conversion %s -o /tmp/pe_out.so", filepath);
+#endif
     system(cmd);
     return dlopen("/tmp/pe_out.so", RTLD_NOW);
 }

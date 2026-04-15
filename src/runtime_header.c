@@ -43,7 +43,7 @@ void print(value val) {
     }
 }
 
-inline value op_add(value a, value b) {
+extern inline value op_add(value a, value b) {
     if (MORPHO_ISINTEGER(a)) {
         if (MORPHO_ISINTEGER(b)) {
             return MORPHO_INTEGER(MORPHO_GETINTEGERVALUE(a) + MORPHO_GETINTEGERVALUE(b));
@@ -65,7 +65,7 @@ inline value op_add(value a, value b) {
     exit(EXIT_FAILURE);
 }
 
-inline value op_sub(value left, value right) {
+extern inline value op_sub(value left, value right) {
     if (MORPHO_ISFLOAT(left)) {
         if (MORPHO_ISFLOAT(right)) {
             return MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) - MORPHO_GETFLOATVALUE(right));
@@ -85,7 +85,7 @@ inline value op_sub(value left, value right) {
     exit(EXIT_FAILURE);
 }
 
-inline value op_mul(value left, value right) {
+extern inline value op_mul(value left, value right) {
     if (MORPHO_ISFLOAT(left)) {
         if (MORPHO_ISFLOAT(right)) {
             return MORPHO_FLOAT( MORPHO_GETFLOATVALUE(left) * MORPHO_GETFLOATVALUE(right));
@@ -105,7 +105,7 @@ inline value op_mul(value left, value right) {
     exit(EXIT_FAILURE);
 }
 
-inline value op_div(value left, value right) {
+extern inline value op_div(value left, value right) {
     if (MORPHO_ISFLOAT(left)) {
         if (MORPHO_ISFLOAT(right))
             return MORPHO_FLOAT(MORPHO_GETFLOATVALUE(left) /
@@ -127,7 +127,7 @@ inline value op_div(value left, value right) {
     exit(EXIT_FAILURE);
 }
 
-inline value op_pow(value left, value right) {
+extern inline value op_pow(value left, value right) {
     if (MORPHO_ISFLOAT(left)) {
         if (MORPHO_ISFLOAT(right)) {
             return MORPHO_FLOAT( pow(MORPHO_GETFLOATVALUE(left), 
@@ -151,7 +151,7 @@ inline value op_pow(value left, value right) {
     exit(EXIT_FAILURE);
 }
 
-inline value op_not(value left) {
+extern inline value op_not(value left) {
 
     if (MORPHO_ISBOOL(left)) {
         return MORPHO_BOOL(!MORPHO_GETBOOLVALUE(left));
@@ -160,7 +160,7 @@ inline value op_not(value left) {
     }
 }
 
-inline value call(value func, int nargs, value *args) {
+extern inline value call(value func, int nargs, value *args) {
 
     if (MORPHO_ISMETAFUNCTION(func)) {
         metafunction_resolve(MORPHO_GETMETAFUNCTION(func), nargs, args + 1, NULL, &func);
