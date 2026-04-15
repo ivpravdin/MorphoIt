@@ -39,7 +39,7 @@ void generate_userfn_asts(
 
             if (userfn_asts.count(fnptr) > 0) break;
 
-            std::cerr << "[PE'ing..." <<  MORPHO_GETCSTRING(fn->name) << "]\n";
+            std::cerr << "[PE'ing..." <<  get_mangled_fn_name(fn) << "]\n";
 
             builder::builder_context ctxt;
             auto ast = ctxt.extract_function_ast(
