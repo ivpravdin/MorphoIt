@@ -35,9 +35,18 @@ dyn_var<value> morpho_vm_rec(
     const instruction * const instructions,
     const objectfunction * const globalfn
 ) {
-    dyn_var<value[PE_NUM_REGS]> reg = builder::with_name("reg", true);
+    // declare arr "reg" with nregs elements
+    dyn_var<builder::generic> reg = builder::with_name("reg", true);
+    reg.set_type(builder::array_of(builder::create_type<value>(), globalfn->nregs));
+
     dyn_var<value[PE_NUM_GLOBALS]> globals = builder::with_name(PE_GLOBALS);
     dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);
+
+    static_var<value> reg_stat[PE_NUM_REGS];
+    for (static_var<size_t> i = 0; i < PE_NUM_REGS; i++) {
+        reg_stat[i] = MORPHO_NIL;
+    }
+
     static_var<instruction> pc = globalfn->entry;
 
     // init'ing reg[0]
@@ -49,6 +58,7 @@ dyn_var<value> morpho_vm_rec(
         runtime_fn_obj.fn = fn_ptr;
         reg[0] = X_MORPHO_OBJECT(&runtime_fn_obj);
     }
+    reg_stat[0] = MORPHO_OBJECT(globalfn);
 
     // loading args into regs
     const size_t total_args = globalfn->nargs + globalfn->nopt;
@@ -65,6 +75,7 @@ dyn_var<value> morpho_vm_rec(
 
             case OP_MOV:
                 reg[a] = reg[b];
+                reg_stat[a] = reg_stat[b];
                 break;
 
             case OP_LCT:
@@ -86,6 +97,7 @@ dyn_var<value> morpho_vm_rec(
                     runtime_fn_obj.type = objectfunctiontype;
                     runtime_fn_obj.fn = fn_ptr;
                     reg[a] = X_MORPHO_OBJECT(&runtime_fn_obj);
+                    reg_stat[a] = globalfn->konst.data[bx];
                 } else {
                     // for other objects...
                     // maybe generate C code equivalent to "get it from the RUNTIME
@@ -215,8 +227,20 @@ dyn_var<value> morpho_vm_rec(
                 //     // reg[a] = retv.ret_dyn;
                 //     // reg_stat[a] = retv.ret_stat;
                 // } else {
-                    reg[a]=runtime::call(left, b, reg + a);
+                {
+                    const value func = reg_stat[a];
+                // if (MORPHO_ISMETAFUNCTION(func)) {
+                //     metafunction_resolve(MORPHO_GETMETAFUNCTION(func), nargs, args + 1, NULL, &func);
                 // }
+
+                    if (MORPHO_ISFUNCTION(reg_stat[a])) {
+                        dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name(MORPHO_GETFUNCTION(func)));
+                        reg[a] = fn_ptr(&reg[a]);
+                    }
+                    else {
+                        reg[a]=runtime::call(left, b, reg + a);
+                    }
+                }
                 break;
             case OP_RETURN:
                 if (a>0)
