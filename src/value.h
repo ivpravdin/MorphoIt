@@ -10,7 +10,16 @@
 // static cast
 #define S_CAST_DYN_VAR(type, exp) (static_cast<DYNAMIFY_TYPE(type)>(exp))
 // reinterpret cast
-#define RI_CAST_DYN_VAR(type, val) (builder::bitcast<type>(val))
+#define RI_CAST_DYN_VAR(type, val) (builder_extra::bitcast<type>(val))
+
+namespace builder_extra {
+  template<typename TO, typename FROM>
+  builder::dyn_var<TO> bitcast(const builder::dyn_var<FROM>& from) {
+      builder::dyn_var<FROM*> from_ptr = &from;
+      builder::dyn_var<TO*> to_ptr = (builder::dyn_var<TO*>)from_ptr;
+      return *to_ptr;
+  }
+}
 
 static inline DYNAMIFY_TYPE(value) x_doubletovalue(DYNAMIFY_TYPE(double) num) {
   return RI_CAST_DYN_VAR(value, num);

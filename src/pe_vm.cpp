@@ -35,9 +35,8 @@ dyn_var<value> morpho_vm_rec(
     const instruction * const instructions,
     const objectfunction * const globalfn
 ) {
-    // declare arr "reg" with nregs elements
-    dyn_var<builder::generic> reg = builder::with_name("reg", true);
-    reg.set_type(builder::array_of(builder::create_type<value>(), globalfn->nregs));
+    // declare arr "reg" with PE_NUM_REGS elements
+    dyn_var<value[PE_NUM_REGS]> reg = builder::with_name("reg", true);
 
     dyn_var<value[PE_NUM_GLOBALS]> globals = builder::with_name(PE_GLOBALS);
     dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);

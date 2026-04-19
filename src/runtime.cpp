@@ -9,7 +9,7 @@
 namespace runtime {
 	// If the function name exposed to buildit will be the same as the one appearing in transpiled code,
 	// you can use this macro
-	#define RUNTIME_FN(signature, fn_name) DYNAMIFY_TYPE(signature) fn_name(builder::as_global(#fn_name))
+	#define RUNTIME_FN(signature, fn_name) DYNAMIFY_TYPE(signature) fn_name(builder::with_name(#fn_name))
 
 	RUNTIME_FN(void(char *), printerr);
 	RUNTIME_FN(void(value), print);
@@ -40,8 +40,6 @@ std::string get_mangled_fn_name(const objectfunction *const fn) {
     name += std::to_string((uintptr_t) fn);
     return std::move(name);
 }
-
-
 
 void print_wrapper_code(std::ostream &oss) {
 	oss << "#define FOR_RUNTIME\n";
