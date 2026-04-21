@@ -5,6 +5,17 @@
 #include "builder/dyn_var.h"
 #include "morpho_header.h"
 
+enum pe_t_note {
+  UNKNOWN = 0,
+  INT,
+  FLOAT,
+  BOOL,
+  NIL,
+  OBJECT
+};
+
+pe_t_note gettypeannotation(value v);
+
 #define DYNAMIFY_TYPE(type) builder::dyn_var<type>
 
 // static cast
@@ -50,8 +61,18 @@ static inline DYNAMIFY_TYPE(double) x_valuetodouble(DYNAMIFY_TYPE(value) num) {
 /** Conversion of a float to an integer with rounding */
 #define X_MORPHO_FLOATTOINTEGER(x) (X_MORPHO_INTEGER((int) round(X_MORPHO_GETFLOATVALUE((x)))))
 
-DYNAMIFY_TYPE(int) x_morpho_comparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
-DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b);
+DYNAMIFY_TYPE(int) x_morpho_comparevalue(
+  DYNAMIFY_TYPE(value) a,
+  DYNAMIFY_TYPE(value) b,
+  const pe_t_note types
+);
+
+DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(
+  DYNAMIFY_TYPE(value) a,
+  DYNAMIFY_TYPE(value) b,
+  const pe_t_note a_t,
+  const pe_t_note b_t
+);
 
 struct dyn_object {
     static constexpr const char* type_name = "object";

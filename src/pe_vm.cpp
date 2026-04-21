@@ -13,6 +13,19 @@
 using builder::dyn_var;
 using builder::static_var;
 using std::vector;
+
+
+
+pe_t_note arith_binop_typerule(value t1, value t2) {
+    if ((t1 != pe_t_note::FLOAT && t1 != pe_t_note::INT) || (t2 != pe_t_note::FLOAT && t2 != pe_t_note::INT))
+        return pe_t_note::UNKNOWN;
+
+    if (t1 == pe_t_note::FLOAT || t2 == pe_t_note::FLOAT)
+        return pe_t_note::FLOAT;
+
+    return pe_t_note::INT;
+}
+
 class UnimplementedInstructionException: public std::exception
 {
   virtual const char* what() const throw()
@@ -33,17 +46,22 @@ dyn_var<value> morpho_vm_rec(
     dyn_var<value *> args, // all buildit examples have dyns first, idk why
     const int n,
     const instruction * const instructions,
-    const objectfunction * const globalfn
+    const objectfunction * const globalfn,
+    std::map<uintptr_t, block::stmt::Ptr> &subfn_asts
 ) {
-    // declare arr "reg" with PE_NUM_REGS elements
-    dyn_var<value[PE_NUM_REGS]> reg = builder::with_name("reg", true);
+    // declare arr "reg" with nregs elements
+    dyn_var<builder::generic> reg = builder::with_name("reg", true);
+    reg.set_type(builder::array_of(builder::create_type<value>(), globalfn->nregs));
 
     dyn_var<value[PE_NUM_GLOBALS]> globals = builder::with_name(PE_GLOBALS);
     dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);
 
-    static_var<value> reg_stat[PE_NUM_REGS];
-    for (static_var<size_t> i = 0; i < PE_NUM_REGS; i++) {
+    std::vector<static_var<value>> reg_stat(globalfn->nregs);
+    std::vector<static_var<pe_t_note>> reg_type(globalfn->nregs);
+
+    for (static_var<size_t> i = 0; i < globalfn->nregs; i++) {
         reg_stat[i] = MORPHO_NIL;
+        reg_type[i] = pe_t_note::UNKNOWN;
     }
 
     static_var<instruction> pc = globalfn->entry;
@@ -58,6 +76,7 @@ dyn_var<value> morpho_vm_rec(
         reg[0] = X_MORPHO_OBJECT(&runtime_fn_obj);
     }
     reg_stat[0] = MORPHO_OBJECT(globalfn);
+    reg_type[0] = pe_t_note::OBJECT;
 
     // loading args into regs
     const size_t total_args = globalfn->nargs + globalfn->nopt;
@@ -75,6 +94,7 @@ dyn_var<value> morpho_vm_rec(
             case OP_MOV:
                 reg[a] = reg[b];
                 reg_stat[a] = reg_stat[b];
+                reg_type[a] = reg_type[b];
                 break;
 
             case OP_LCT:
@@ -104,22 +124,27 @@ dyn_var<value> morpho_vm_rec(
                     // aside from any objects types want to statically eval
                     reg[a] = globalfn->konst.data[bx];
                 }
+                reg_type[a] = gettypeannotation(globalfn->konst.data[bx]);
                 break;
 
             case OP_ADD:
                 left = reg[b], right = reg[c];
                 reg[a] = runtime::op_add(left, right);
+
+                reg_type[a] = arith_binop_typerule(reg_type[b], reg_type[c]);
                 break;
 
             case OP_SUB:
                 left = reg[b], right = reg[c];
 
                 reg[a] = runtime::op_sub(left, right);
+                reg_type[a] = arith_binop_typerule(reg_type[b], reg_type[c]);
                 break;
 
             case OP_MUL:
                 left = reg[b], right = reg[c];
                 reg[a] = runtime::op_mul(left, right);
+                reg_type[a] = arith_binop_typerule(reg_type[b], reg_type[c]);
 
                 break;
 
@@ -127,6 +152,7 @@ dyn_var<value> morpho_vm_rec(
                 left = reg[b], right = reg[c];
                 reg[a] = runtime::op_div(left, right);
 
+                reg_type[a] = pe_t_note::FLOAT;
                 break;
 
             case OP_POW: //POW
@@ -134,37 +160,42 @@ dyn_var<value> morpho_vm_rec(
                 right = reg[c];
                 reg[a] = runtime::op_pow(left, right);
 
+                reg_type[a] = pe_t_note::FLOAT;
                 break;
 
             case OP_EQ:
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = X_MORPHO_BOOL(!runtime::morpho_extendedcomparevalue(left, right));
+                reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(a, b, reg_type[a], reg_type[b]));
+                reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_NEQ:
                 left = reg[b];
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right));
+                reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_NOT:
                 left = reg[b];
 
                 reg[a] = runtime::op_not(left);
-
+                reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_LT: //LT
                 left = reg[b];
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right) > MORPHO_EQUAL);
+                reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_LE: //LT
                 left = reg[b];
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right) >= MORPHO_EQUAL);
+                reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_B: // B
                 pc+=sbx;
@@ -235,11 +266,15 @@ dyn_var<value> morpho_vm_rec(
                     if (MORPHO_ISFUNCTION(reg_stat[a])) {
                         dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name(MORPHO_GETFUNCTION(func)));
                         reg[a] = fn_ptr(&reg[a]);
+                        // reg_type[a] = MORPHO_GETFUNCTION(func)->sig.ret;
                     }
                     else {
                         reg[a]=runtime::call(left, b, reg + a);
+                        // reg_type[a] = TAG_UNDEF_T;
                     }
                 }
+                // for now function calls will be completely opaque
+                reg_type[a] = pe_t_note::UNKNOWN;
                 break;
             case OP_RETURN:
                 if (a>0)
@@ -249,6 +284,7 @@ dyn_var<value> morpho_vm_rec(
                 break;
             case OP_LGL: // LGL
                 reg[a]=globals[bx];
+                reg_type[a] = pe_t_note::UNKNOWN;
                 break;
             case OP_SGL: // SGL
                 globals[bx]=reg[a];
@@ -272,7 +308,8 @@ dyn_var<value> morpho_vm(
     dyn_var<value *> args,
     const int n,
     const instruction *const instructions,
-    const objectfunction *const globalfn
+    const objectfunction *const globalfn,
+    std::map<uintptr_t, block::stmt::Ptr> &subfn_asts
 ) {
     // std::cerr << "toplevel\n";
     // declaration of globals is handled in header.c, no other way to make it
@@ -281,6 +318,7 @@ dyn_var<value> morpho_vm(
         args,
         n,
         instructions,
-        globalfn
+        globalfn,
+        subfn_asts
     );
 }

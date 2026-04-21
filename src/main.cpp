@@ -51,7 +51,8 @@ void generate_userfn_asts(
                     get_mangled_fn_name(fn),
                     ninstructions,
                     bytecode,
-                    fn
+                    fn,
+                    userfn_asts
             );
             auto [_, was_inserted] = userfn_asts.insert_or_assign(fnptr, std::move(ast));
             assert(was_inserted);
@@ -148,7 +149,8 @@ int main(int argc, char* argv[]) {
             "main_morpho",
                 ninstructions,
                 bytecode,
-                globalfn
+                globalfn,
+                userfn_asts
         );
     } catch (std::exception &e) {
         std::cerr << "Partial evaluation exited early with error: '"
