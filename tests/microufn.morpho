@@ -1,0 +1,4 @@
+fn f(x) { return x }
+fn g(x) { return x }
+
+print f(1)

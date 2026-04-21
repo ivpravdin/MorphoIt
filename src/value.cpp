@@ -1,7 +1,7 @@
 #include "value.h"
 #include "morpho_header.h"
 #include "builder/dyn_var.h"
-#include "builtin.h"
+#include "runtime.h"
 
 using builder::dyn_var;
 using builder::static_var;

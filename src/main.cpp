@@ -3,6 +3,8 @@
 #include <iterator>
 #include <filesystem>
 #include <cstring>
+#include <dlfcn.h>
+#include <map>
 
 #include "blocks/c_code_generator.h"
 
@@ -10,7 +12,54 @@
 
 #include "morpho_header.h"
 #include "pe_vm.h"
-#include "builtin.h"
+#include "runtime.h"
+
+#define TMP_C_FILE "/tmp/pe_out.c"
+
+void* compile_and_load_lib(const char* filepath) {
+    char cmd[256];
+#ifdef DEBUG
+    snprintf(cmd, sizeof(cmd), "gcc -g -fno-omit-frame-pointer -shared -fPIC -Wno-incompatible-pointer-types -Wno-int-conversion %s -o /tmp/pe_out.so", filepath);
+#else
+    snprintf(cmd, sizeof(cmd), "gcc -O3 -shared -fPIC -Wno-incompatible-pointer-types -Wno-int-conversion %s -o /tmp/pe_out.so", filepath);
+#endif
+    system(cmd);
+    return dlopen("/tmp/pe_out.so", RTLD_NOW);
+}
+
+void generate_userfn_asts(
+    const varray_instruction &code,
+    const varray_value &const_table,
+    std::map<uintptr_t, block::stmt::Ptr> &userfn_asts
+) {
+    const size_t ninstructions = code.count;
+    const instruction *bytecode = (instruction *) code.data;
+    const size_t nconsts = const_table.count;
+
+    for (size_t i = 0; i < nconsts; i++) {
+        if (MORPHO_ISFUNCTION(const_table.data[i])) {
+            objectfunction *fn = MORPHO_GETFUNCTION(const_table.data[i]);
+            uintptr_t fnptr = (uintptr_t) fn;
+
+            if (userfn_asts.count(fnptr) > 0) break;
+
+            std::cerr << "[PE'ing..." <<  get_mangled_fn_name(fn) << "]\n";
+
+            builder::builder_context ctxt;
+            auto ast = ctxt.extract_function_ast(
+                morpho_vm,
+                    get_mangled_fn_name(fn),
+                    ninstructions,
+                    bytecode,
+                    fn
+            );
+            auto [_, was_inserted] = userfn_asts.insert_or_assign(fnptr, std::move(ast));
+            assert(was_inserted);
+
+            generate_userfn_asts(code, fn->konst, userfn_asts);
+        }
+    }
+}
 
 int main(int argc, char* argv[]) {
     bool hexdump = false;
@@ -33,17 +82,18 @@ int main(int argc, char* argv[]) {
     assert(src_file_path);
 
     std::istream *input = &std::cin;
-    std::ifstream file;
+    std::ifstream src_file;
     if (strcmp(src_file_path, "-") != 0) {
-        file = std::ifstream(src_file_path, std::ios::in);
-        if (not file.is_open()) {
+        src_file = std::ifstream(src_file_path, std::ios::in);
+        if (not src_file.is_open()) {
             std::cerr << "Could not open '" << src_file_path << "'. Exiting." << std::endl;
             return EXIT_FAILURE;
         }
-        input = &file;
+        input = &src_file;
     }
 
     std::string src(std::istreambuf_iterator<char>{*input}, {});
+    src_file.close();
 
 	builder::builder_context context;
 
@@ -55,36 +105,87 @@ int main(int argc, char* argv[]) {
     error err;
     error_init(&err);
 
-    if (morpho_compile(const_cast<char*>(src.c_str()), c, false, &err)) {
-        varray_instruction *code = program_getbytecode(p);
-        objectfunction *globalfn = program_getglobalfn(p);
-        
-        uint32_t *bytecode = (uint32_t *) code->data;
-        int ninstructions = code->count;
-
-        if (hexdump) {
-            for (int i = 0; i < ninstructions; i++) {
-                std::cout << "0x"
-                     << std::setfill('0')
-                     << std::setw(sizeof(*bytecode) * 2)
-                     << std::hex
-                     << bytecode[i] << "\n";
-            }
-        }
-        else {
-            auto ast = context.extract_function_ast(morpho_vm, "main", ninstructions, bytecode, globalfn);
-            print_wrapper_code(std::cout);
-            block::c_code_generator::generate_code(ast, std::cout, 0);
-        }
-
-    } else {
+    if (!morpho_compile(const_cast<char*>(src.c_str()), c, false, &err)) {
         fprintf(stderr, "Morpho compilation error [%s]: %s\n", err.id, err.msg);
+        morpho_freeprogram(p);
+        morpho_freecompiler(c);
+        morpho_finalize();
         return EXIT_FAILURE;
     }
 
+    varray_instruction *code = program_getbytecode(p);
+    objectfunction *globalfn = program_getglobalfn(p);
+
+    instruction *bytecode = (instruction *) code->data;
+    int ninstructions = code->count;
+
+    if (hexdump) {
+        for (int i = 0; i < ninstructions; i++) {
+            std::cout << "0x"
+                    << std::setfill('0')
+                    << std::setw(sizeof(*bytecode) * 2)
+                    << std::hex
+                    << bytecode[i] << "\n";
+        }
+
+        morpho_freeprogram(p);
+        morpho_freecompiler(c);
+        morpho_finalize();
+        return EXIT_SUCCESS;
+    }
+
+    std::ofstream out_c_file(TMP_C_FILE);
+
+
+    std::map<uintptr_t, block::stmt::Ptr> userfn_asts;
+    block::stmt::Ptr ast;
+
+    try {
+        generate_userfn_asts(*code, globalfn->konst, userfn_asts);
+        std::cerr << "[PE'ing main]\n";
+        ast = context.extract_function_ast(
+            morpho_vm,
+            "main_morpho",
+                ninstructions,
+                bytecode,
+                globalfn
+        );
+    } catch (std::exception &e) {
+        std::cerr << "Partial evaluation exited early with error: '"
+                  << e.what()
+                  << "'\n";
+        morpho_freeprogram(p);
+        morpho_freecompiler(c);
+        morpho_finalize();
+        return EXIT_FAILURE;
+    }
+
+    print_wrapper_code(out_c_file);
+    std::cerr << "[CODE GENERATED]\n";
+
+    // user fn declarations
+    for (auto [_, ast] : userfn_asts) {
+        block::c_code_generator::generate_code(ast, out_c_file, 0, true);
+    }
+    // user fn definitions
+    for (auto [_, ast] : userfn_asts) {
+        block::c_code_generator::generate_code(ast, out_c_file, 0);
+    }
+
+    // main
+    block::c_code_generator::generate_code(ast, out_c_file, 0);
+    out_c_file.close();
+
+    std::cerr << "[COMPILING]\n";
+    void* lib = compile_and_load_lib(TMP_C_FILE);
+    auto main_morpho = (int (*)()) dlsym(lib, "main_morpho");
+    std::cerr << "[RUNNING]\n";
+    int result = main_morpho();
+    //std::cout << "Program exited with code " << result << std::endl;
+
+
     morpho_freeprogram(p);
     morpho_freecompiler(c);
-
     morpho_finalize();
 
 	return EXIT_SUCCESS;

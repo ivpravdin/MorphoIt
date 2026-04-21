@@ -1,0 +1,20 @@
+fn T() {
+    return true
+}
+
+fn F() {
+    return false
+}
+
+fn if_f_then_g(f, g) {
+    if (f()) {
+        return g
+    } else {
+        return f
+    }
+}
+
+print if_f_then_g(T, F)() // return false
+print if_f_then_g(F, T)() // return false
+print if_f_then_g(F, F)() // return false
+print if_f_then_g(T, T)() // return true

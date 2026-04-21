@@ -1,0 +1,36 @@
+#ifndef SRC_RUNTIME_H
+#define SRC_RUNTIME_H
+
+#include <ostream>
+#include "value.h" // <- the local one
+
+constexpr const char USERFN_NAME_PREFIX[] = "morpho_userfn_";
+namespace runtime {
+	// If the function name exposed to buildit will be the same as the one appearing in transpiled code,
+	// you can use this macro
+	#define DECL_RUNTIME_FN(signature, fn_name) extern DYNAMIFY_TYPE(signature) fn_name;
+
+	DECL_RUNTIME_FN(void(char *), printerr);
+	DECL_RUNTIME_FN(void(value), print);
+
+	DECL_RUNTIME_FN(double(double, double), pow);
+	DECL_RUNTIME_FN(double(double), round);
+    DECL_RUNTIME_FN(double(double), fabs);
+
+    DECL_RUNTIME_FN(int(value, value), morpho_extendedcomparevalue);
+
+	DECL_RUNTIME_FN(value(value, value), op_add);
+	DECL_RUNTIME_FN(value(value, value), op_sub);
+	DECL_RUNTIME_FN(value(value, value), op_mul);
+	DECL_RUNTIME_FN(value(value, value), op_div);
+	DECL_RUNTIME_FN(value(value, value), op_pow);
+	DECL_RUNTIME_FN(value(value), op_not);
+	DECL_RUNTIME_FN(value(value, int, value*), call);
+
+	#undef DECL_RUNTIME_FN
+}
+
+std::string get_mangled_fn_name(const objectfunction *const fn);
+void print_wrapper_code(std::ostream &oss);
+
+#endif // BUILTIN_H

@@ -15,7 +15,13 @@ project(morphoit)
 
 set(BUILDIT_PATH "${CMAKE_SOURCE_DIR}/buildit")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -Wfatal-errors")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfatal-errors -std=c++23")
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fno-omit-frame-pointer -DDEBUG")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+endif()
 
 include(ExternalProject)
 
@@ -69,7 +75,7 @@ add_dependencies(morphoit buildit_lib)
 #-------------------------------------------------------------------------------
 
 separate_arguments(BUILDIT_COMPILE_FLAGS)
-target_compile_options(morphoit PRIVATE ${BUILDIT_COMPILE_FLAGS})
+target_compile_options(morphoit PRIVATE ${BUILDIT_COMPILE_FLAGS} -std=c++23)
 
 separate_arguments(BUILDIT_LINKER_FLAGS)
 target_link_options(morphoit PRIVATE ${BUILDIT_LINKER_FLAGS})

@@ -1,0 +1,5 @@
+var a = 0
+for (var i = 0; i < 3; i+=1) print i
+
+
+print a
