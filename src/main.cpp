@@ -166,11 +166,12 @@ int main(int argc, char* argv[]) {
     std::cerr << "[CODE GENERATED]\n";
 
     // user fn declarations
-    for (auto [_, ast] : userfn_asts) {
+    for (auto [key, ast] : userfn_asts) {
         block::c_code_generator::generate_code(ast, out_c_file, 0, true);
+        out_c_file << generate_fnobj_definition((objectfunction *) key);
     }
     // user fn definitions
-    for (auto [_, ast] : userfn_asts) {
+    for (auto [key, ast] : userfn_asts) {
         block::c_code_generator::generate_code(ast, out_c_file, 0);
     }
 

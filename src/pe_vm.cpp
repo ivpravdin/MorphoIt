@@ -61,10 +61,7 @@ dyn_var<value> morpho_vm_rec(
     // init'ing reg[0]
     // for now we'll just do this, since, e.g. the globalfn has a NULL name
     if (MORPHO_ISOBJECT(globalfn->name)) {
-        dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name(globalfn));
-        dyn_var<struct userfn_object> runtime_fn_obj;
-        runtime_fn_obj.type = objectfunctiontype;
-        runtime_fn_obj.fn = fn_ptr;
+        dyn_var<struct userfn_object> runtime_fn_obj = builder::with_name(get_mangled_fnobj_name(globalfn));
         reg[0] = X_MORPHO_OBJECT(&runtime_fn_obj);
     }
     reg_stat[0] = MORPHO_OBJECT(globalfn);
@@ -207,55 +204,8 @@ dyn_var<value> morpho_vm_rec(
 
             case OP_CALL: // CALL (no support for optional arguments yet)
                 left = reg[a];
-                // // runtime::print(reg[a]);          // print morpho_fn at runtime
-                // // object_print(NULL, reg_stat[a]); // print morpho_fn at PE time
-    
-                // // in theory should also handle closures
-                // if (MORPHO_ISFUNCTION(reg_stat[a])) {
-                //     const objectfunction *func = MORPHO_GETFUNCTION(reg_stat[a]);
-                //     // TODO: this does not handle functions as returned values
-                //     dyn_var<value[PE_NUM_REGS]> regswithargs;
-                //     static_var<value> regswithargs_stat[PE_NUM_REGS];
-                //     // r0 = function object
-                //     // I could pass it reg_stat but
-                //     // that would be the literal pointer to the function
-                //     regswithargs[0] = reg[a]; 
-                //     regswithargs_stat[0] = reg_stat[a]; 
-                //     // r1..rn = args 1..n
-                //     const int32_t n_opt_args = b;
-                //     const int32_t n_pos_args = c;
-                //     for (static_var<size_t> i = 0; i < n_opt_args + n_pos_args; i++) {
-                //         regswithargs[i + 1] = reg[a + 1 + i];
-                //         regswithargs_stat[i + 1] = reg_stat[a + 1 + i];
-                //     }
-                //     // Zero out rest of static regs
-                //     for (static_var<size_t> i = n_opt_args + n_pos_args + 1; i < PE_NUM_REGS; i++) {
-                //         regswithargs_stat[i] = MORPHO_NIL;
-                //     }
-
-                //      /* * reg[b] = runtime::f
-                //      * Is there ANY way to get static vars out of this bitch?
-                //      * I don't think so? But we can make a hash table that converts function objects to 
-                //      * actual functions. Is there any point then in inlining?
-                //     */
-
-                //     vm_return retv = morpho_vm_rec(
-                //         n,
-                //         instructions,
-                //         func,
-                //         globals,
-                //         globals_stat,
-                //         regswithargs,
-                //         regswithargs_stat
-                //     );
-                //     // reg[a] = retv.ret_dyn;
-                //     // reg_stat[a] = retv.ret_stat;
-                // } else {
                 {
                     const value func = reg_stat[a];
-                // if (MORPHO_ISMETAFUNCTION(func)) {
-                //     metafunction_resolve(MORPHO_GETMETAFUNCTION(func), nargs, args + 1, NULL, &func);
-                // }
 
                     if (MORPHO_ISFUNCTION(reg_stat[a])) {
                         dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name(MORPHO_GETFUNCTION(func)));
