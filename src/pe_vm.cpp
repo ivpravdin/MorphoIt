@@ -76,15 +76,6 @@ dyn_var<value> morpho_vm_rec(
 
             case OP_LCT:
                 if (MORPHO_ISFUNCTION(globalfn->konst.data[bx])) {
-                    // The purpose of the below block is to produce
-                    // the C code that looks like:
-                    //
-                    //      struct userfn_object var1;
-                    //      var1.type = 4;
-                    //      var1.fn = morpho_userfn_f;
-                    //      unsigned long int var2 = &var1;
-                    //      unsigned long int var3 = MORPHO_OBJECT(var2)
-
                     const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
 
                     // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
@@ -103,23 +94,27 @@ dyn_var<value> morpho_vm_rec(
             case OP_ADD:
                 left = reg[b], right = reg[c];
                 reg[a] = runtime::op_add(left, right);
+                reg_stat[a] = MORPHO_NIL;
                 break;
 
             case OP_SUB:
                 left = reg[b], right = reg[c];
 
                 reg[a] = runtime::op_sub(left, right);
+                reg_stat[a] = MORPHO_NIL;
                 break;
 
             case OP_MUL:
                 left = reg[b], right = reg[c];
                 reg[a] = runtime::op_mul(left, right);
+                reg_stat[a] = MORPHO_NIL;
 
                 break;
 
             case OP_DIV:
                 left = reg[b], right = reg[c];
                 reg[a] = runtime::op_div(left, right);
+                reg_stat[a] = MORPHO_NIL;
 
                 break;
 
@@ -127,6 +122,7 @@ dyn_var<value> morpho_vm_rec(
                 left = reg[b];
                 right = reg[c];
                 reg[a] = runtime::op_pow(left, right);
+                reg_stat[a] = MORPHO_NIL;
 
                 break;
 
@@ -135,17 +131,20 @@ dyn_var<value> morpho_vm_rec(
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(!runtime::morpho_extendedcomparevalue(left, right));
+                reg_stat[a] = MORPHO_NIL;
                 break;
             case OP_NEQ:
                 left = reg[b];
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right));
+                reg_stat[a] = MORPHO_NIL;
                 break;
             case OP_NOT:
                 left = reg[b];
 
                 reg[a] = runtime::op_not(left);
+                reg_stat[a] = MORPHO_NIL;
 
                 break;
             case OP_LT: //LT
@@ -182,11 +181,11 @@ dyn_var<value> morpho_vm_rec(
                     if (MORPHO_ISFUNCTION(reg_stat[a])) {
                         dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name(MORPHO_GETFUNCTION(func)));
                         reg[a] = fn_ptr(&reg[a]);
-                    }
-                    else {
-                        reg[a]=runtime::call(left, b, reg + a);
+                    } else {
+                        reg[a]=runtime::call(left, b, &reg[a]);
                     }
                 }
+                reg_stat[a] = MORPHO_NIL;
                 break;
             case OP_RETURN:
                 if (a>0)
@@ -196,6 +195,7 @@ dyn_var<value> morpho_vm_rec(
                 break;
             case OP_LGL: // LGL
                 reg[a]=globals[bx];
+                reg_stat[a] = MORPHO_NIL;
                 break;
             case OP_SGL: // SGL
                 globals[bx]=reg[a];
