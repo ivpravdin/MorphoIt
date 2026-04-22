@@ -88,10 +88,7 @@ dyn_var<value> morpho_vm_rec(
                     const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
 
                     // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
-                    dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name(morpho_fn));
-                    dyn_var<struct userfn_object> runtime_fn_obj;
-                    runtime_fn_obj.type = objectfunctiontype;
-                    runtime_fn_obj.fn = fn_ptr;
+                    dyn_var<struct userfn_object> runtime_fn_obj = builder::with_name(get_mangled_fnobj_name(morpho_fn));;
                     reg[a] = X_MORPHO_OBJECT(&runtime_fn_obj);
                     reg_stat[a] = globalfn->konst.data[bx];
                 } else {
