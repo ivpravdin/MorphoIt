@@ -5,6 +5,8 @@
 #include "value.h" // <- the local one
 
 constexpr const char USERFN_NAME_PREFIX[] = "morpho_userfn_";
+constexpr const char USERFNOBJ_NAME_SUFFIX[] = "_wrapperstruct";
+
 namespace runtime {
 	// If the function name exposed to buildit will be the same as the one appearing in transpiled code,
 	// you can use this macro
@@ -32,5 +34,7 @@ namespace runtime {
 
 std::string get_mangled_fn_name(const objectfunction *const fn);
 void print_wrapper_code(std::ostream &oss);
+std::string get_mangled_fnobj_name(const objectfunction *const fn);
+std::string generate_fnobj_definition(const objectfunction *const fn);
 
 #endif // BUILTIN_H

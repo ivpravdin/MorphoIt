@@ -41,6 +41,18 @@ std::string get_mangled_fn_name(const objectfunction *const fn) {
     return std::move(name);
 }
 
+std::string get_mangled_fnobj_name(const objectfunction *const fn) {
+    return get_mangled_fn_name(fn) + USERFNOBJ_NAME_SUFFIX;
+}
+
+std::string generate_fnobj_definition(const objectfunction *const fn) {
+	return "const struct userfn_object "
+		+ get_mangled_fnobj_name(fn)
+		+ " = { .type = 4, .fn = "
+		+ get_mangled_fn_name(fn)
+		+ " };\n";
+}
+
 void print_wrapper_code(std::ostream &oss) {
 	oss << "#define FOR_RUNTIME\n";
 	oss << header;
