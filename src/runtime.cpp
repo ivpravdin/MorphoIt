@@ -19,6 +19,8 @@ namespace runtime {
     RUNTIME_FN(double(double), fabs);
 
 	RUNTIME_FN(int(value, value), morpho_extendedcomparevalue);
+    RUNTIME_FN(int(double, double), compare_double);
+    RUNTIME_FN(int(double, double), compare_int);
 
 	RUNTIME_FN(value(value, value), op_add);
 	RUNTIME_FN(value(value, value), op_sub);

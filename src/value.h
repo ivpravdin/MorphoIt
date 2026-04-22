@@ -15,6 +15,7 @@ enum pe_t_note {
 };
 
 pe_t_note gettypeannotation(value v);
+pe_t_note arith_binop_typerule(value t1, value t2);
 
 #define DYNAMIFY_TYPE(type) builder::dyn_var<type>
 

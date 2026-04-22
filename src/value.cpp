@@ -16,6 +16,16 @@ pe_t_note gettypeannotation(value v) {
     }
 }
 
+pe_t_note arith_binop_typerule(value t1, value t2) {
+    if ((t1 != pe_t_note::FLOAT && t1 != pe_t_note::INT) || (t2 != pe_t_note::FLOAT && t2 != pe_t_note::INT))
+        return pe_t_note::UNKNOWN;
+
+    if (t1 == pe_t_note::FLOAT || t2 == pe_t_note::FLOAT)
+        return pe_t_note::FLOAT;
+
+    return pe_t_note::INT;
+}
+
 // DYNAMIFY_TYPE(bool) x_morpho_valuetofloat(DYNAMIFY_TYPE(value) v, DYNAMIFY_TYPE(double) *out) {
 //     if (MORPHO_ISINTEGER(v)) { *out = DYNAMIFY_TYPE(double) X_MORPHO_GETINTEGERVALUE(v); return true; }
 //     if (MORPHO_ISFLOAT(v)) { *out = X_MORPHO_GETFLOATVALUE(v); return true; }
@@ -29,14 +39,6 @@ pe_t_note gettypeannotation(value v) {
 //     return y;
 // }
 
-/**  @brief Compare two doubles for equality using both absolute and relative tolerances */
-DYNAMIFY_TYPE(bool) x_morpho_doubleeqtest(DYNAMIFY_TYPE(double) a, DYNAMIFY_TYPE(double) b) {
-    if (a==b) return true; 
-    DYNAMIFY_TYPE(double) diff = runtime::fabs(a-b);
-    DYNAMIFY_TYPE(double) absa = runtime::fabs(a), absb=runtime::fabs(b);
-    DYNAMIFY_TYPE(double) absmax = (absa>absb ? absa : absb);
-    return (diff == 0.0) || (absmax > DBL_MIN && diff/absmax <= MORPHO_RELATIVE_EPS);
-}
 
 /** @brief Compares two values
  * @param a value to compare
@@ -49,13 +51,16 @@ DYNAMIFY_TYPE(int) x_morpho_comparevalue(
     const pe_t_note types
 ) {
     //if (!morpho_ofsametype(a, b)) return MORPHO_NOTEQUAL;
-    
+
     if (types == pe_t_note::FLOAT) {
         DYNAMIFY_TYPE(double) aa = X_MORPHO_GETFLOATVALUE(a);
         DYNAMIFY_TYPE(double) bb = X_MORPHO_GETFLOATVALUE(b);
-        // arguably: move morpho_doubleeqtest to runtime::
-        if (x_morpho_doubleeqtest(aa, bb)) return MORPHO_EQUAL;
-        return (bb>aa ? MORPHO_BIGGER : MORPHO_SMALLER);
+        // Before there used to be a line here like:
+        // if (x_morpho_doubleeqtest(aa, bb)) return MORPHO_EQUAL; // TODO: this kills us
+        // return (bb>aa ? MORPHO_BIGGER : MORPHO_SMALLER);
+        // but if's and ternary's on dyn_var's require buildit to do reevaluations
+        // plus I'd want the C-compiler to figure out inlining on something like this
+        return runtime::compare_double(aa, bb);
     }
 
     if (types == pe_t_note::NIL) {
@@ -65,8 +70,7 @@ DYNAMIFY_TYPE(int) x_morpho_comparevalue(
     if (types == pe_t_note::INT) {
         DYNAMIFY_TYPE(int) aa = X_MORPHO_GETINTEGERVALUE(a);
         DYNAMIFY_TYPE(int) bb = X_MORPHO_GETINTEGERVALUE(b);
-        if (aa==bb) return MORPHO_EQUAL;
-        return (bb>aa ? MORPHO_BIGGER : MORPHO_SMALLER);
+        return runtime::compare_int(aa, bb);
     }
 
     if (types == pe_t_note::BOOL) {
@@ -90,7 +94,13 @@ DYNAMIFY_TYPE(int) x_morpho_comparevalue(
  * @param a value to compare
  * @param b value to compare
  * @returns 0 if a and b are equal, a positive number if b\>a and a negative number if a\<b*/
-DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(DYNAMIFY_TYPE(value) a, DYNAMIFY_TYPE(value) b, const pe_t_note a_t, const pe_t_note b_t) {
+DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(
+    DYNAMIFY_TYPE(value) a,
+    DYNAMIFY_TYPE(value) b,
+    const pe_t_note a_t,
+    const pe_t_note b_t
+) {
+    std::cerr << "received types of: " << a_t << " & " << b_t << "\n";
     if (a_t == pe_t_note::UNKNOWN || b_t == pe_t_note::UNKNOWN) return runtime::morpho_extendedcomparevalue(a, b);
     if (a_t == b_t) return x_morpho_comparevalue(a, b, a_t);
 

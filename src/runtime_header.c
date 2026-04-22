@@ -43,6 +43,24 @@ void print(value val) {
     }
 }
 
+extern inline value compare_double(double a, double b) {
+    if (a==b) return MORPHO_EQUAL; 
+
+    double diff = fabs(a-b);
+    double absa = fabs(a), absb=fabs(b);
+    double absmax = (absa>absb ? absa : absb);
+    bool is_eq = (diff == 0.0) || (absmax > DBL_MIN && diff/absmax <= MORPHO_RELATIVE_EPS);
+
+    if (is_eq) return MORPHO_EQUAL;
+
+    return (b>a ? MORPHO_BIGGER : MORPHO_SMALLER);
+}
+
+extern inline value compare_int(double a, double b) {
+    if (a==b) return MORPHO_EQUAL; 
+    return (b>a ? MORPHO_BIGGER : MORPHO_SMALLER);
+}
+
 extern inline value op_add(value a, value b) {
     if (MORPHO_ISINTEGER(a)) {
         if (MORPHO_ISINTEGER(b)) {

@@ -3,6 +3,7 @@
 #include <exception>
 #include "builder/dyn_var.h"
 #include "builder/static_var.h"
+#include "builder/lib/utils.h"
 
 #include "value.h"
 #include "runtime.h"
@@ -16,15 +17,6 @@ using std::vector;
 
 
 
-pe_t_note arith_binop_typerule(value t1, value t2) {
-    if ((t1 != pe_t_note::FLOAT && t1 != pe_t_note::INT) || (t2 != pe_t_note::FLOAT && t2 != pe_t_note::INT))
-        return pe_t_note::UNKNOWN;
-
-    if (t1 == pe_t_note::FLOAT || t2 == pe_t_note::FLOAT)
-        return pe_t_note::FLOAT;
-
-    return pe_t_note::INT;
-}
 
 class UnimplementedInstructionException: public std::exception
 {
@@ -50,8 +42,8 @@ dyn_var<value> morpho_vm_rec(
     std::map<uintptr_t, block::stmt::Ptr> &subfn_asts
 ) {
     // declare arr "reg" with nregs elements
-    dyn_var<builder::generic> reg = builder::with_name("reg", true);
-    reg.set_type(builder::array_of(builder::create_type<value>(), globalfn->nregs));
+    dyn_var<value[]> reg = builder::with_name("reg", true);
+    builder::resize_arr(reg, globalfn->nregs);
 
     dyn_var<value[PE_NUM_GLOBALS]> globals = builder::with_name(PE_GLOBALS);
     dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);
@@ -125,6 +117,7 @@ dyn_var<value> morpho_vm_rec(
                     reg[a] = globalfn->konst.data[bx];
                 }
                 reg_type[a] = gettypeannotation(globalfn->konst.data[bx]);
+                // std::cerr << "Loaded const of type: " << reg_type[a] << "\n";
                 break;
 
             case OP_ADD:
@@ -167,7 +160,8 @@ dyn_var<value> morpho_vm_rec(
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(a, b, reg_type[a], reg_type[b]));
+                // reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(left, right, reg_type[b], reg_type[c]));
+                reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(left, right, reg_type[b], reg_type[c]));
                 reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_NEQ:
@@ -298,7 +292,6 @@ dyn_var<value> morpho_vm_rec(
             default:
                 throw UnimplementedInstructionException();
         }
-
         pc++;
     }
     throw OutOfBoundsPCException();

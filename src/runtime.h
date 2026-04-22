@@ -18,6 +18,8 @@ namespace runtime {
     DECL_RUNTIME_FN(double(double), fabs);
 
     DECL_RUNTIME_FN(int(value, value), morpho_extendedcomparevalue);
+    DECL_RUNTIME_FN(int(double, double), compare_double);
+    DECL_RUNTIME_FN(int(double, double), compare_int);
 
 	DECL_RUNTIME_FN(value(value, value), op_add);
 	DECL_RUNTIME_FN(value(value, value), op_sub);
