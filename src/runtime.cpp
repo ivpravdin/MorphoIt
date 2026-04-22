@@ -50,8 +50,9 @@ std::string get_mangled_fnobj_name(const objectfunction *const fn) {
 std::string generate_fnobj_definition(const objectfunction *const fn) {
 	return "const struct userfn_object "
 		+ get_mangled_fnobj_name(fn)
-		+ " = { .type = 4, .fn = "
-		+ get_mangled_fn_name(fn)
+		+ " = { "
+		+ ".type = " + std::to_string(objectfunctiontype) + ", " +
+		+ ".fn = " + get_mangled_fn_name(fn)
 		+ " };\n";
 }
 
