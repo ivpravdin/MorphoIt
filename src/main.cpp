@@ -13,6 +13,7 @@
 #include "morpho_header.h"
 #include "pe_vm.h"
 #include "runtime.h"
+#include "pe_vm_consts.h"
 
 #define TMP_C_FILE "/tmp/pe_out.c"
 
@@ -190,9 +191,9 @@ int main(int argc, char* argv[]) {
 
     std::cerr << "[COMPILING]\n";
     void* lib = compile_and_load_lib(TMP_C_FILE);
-    auto main_morpho = (int (*)()) dlsym(lib, "main_morpho");
+    userfn main_morpho = reinterpret_cast<userfn>(dlsym(lib, "main_morpho"));
     std::cerr << "[RUNNING]\n";
-    int result = main_morpho();
+    int result = main_morpho(NULL);
     //std::cout << "Program exited with code " << result << std::endl;
 
 

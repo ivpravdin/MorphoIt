@@ -172,7 +172,7 @@ extern inline value call(value func, int nargs, value *args) {
 
     if (MORPHO_ISFUNCTION(func)) {
         userfn f = ((struct userfn_object *) MORPHO_GETOBJECT(func))->fn;
-        return f(args, nargs, NULL /* this is vargs, unimplemented */);
+        return f(args);
     }
     printf("Attempted to call function of type: %lld != %d", MORPHO_GETTYPE(func), OBJECT_BUILTINFUNCTION);
     exit(EXIT_FAILURE);
