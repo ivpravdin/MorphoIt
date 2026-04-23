@@ -10,7 +10,7 @@
 #include <morpho/object.h>
 
 typedef value (*userfn)(const value *const, int32_t, int32_t);
-#define PE_GLOBALS "globals"
+#define PE_GLOBALSBUF_NAME "globals"
 #define PE_NUM_REGS 255
 #define PE_NUM_GLOBALS 100
 
