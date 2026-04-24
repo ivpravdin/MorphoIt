@@ -212,7 +212,7 @@ dyn_var<value> morpho_vm(
             case OP_ADD:
                 left = reg[b], right = reg[c];
                 reg[a] = op_add(left, right, reg_type[b], reg_type[c]);
-
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = arith_binop_typerule(reg_type[b], reg_type[c]);
                 break;
 
@@ -220,12 +220,14 @@ dyn_var<value> morpho_vm(
                 left = reg[b], right = reg[c];
 
                 reg[a] = op_sub(left, right, reg_type[b], reg_type[c]);
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = arith_binop_typerule(reg_type[b], reg_type[c]);
                 break;
 
             case OP_MUL:
                 left = reg[b], right = reg[c];
                 reg[a] = op_mul(left, right, reg_type[b], reg_type[c]);
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = arith_binop_typerule(reg_type[b], reg_type[c]);
 
                 break;
@@ -233,7 +235,7 @@ dyn_var<value> morpho_vm(
             case OP_DIV:
                 left = reg[b], right = reg[c];
                 reg[a] = op_div(left, right, reg_type[b], reg_type[c]);
-
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = pe_t_note::FLOAT;
                 break;
 
@@ -241,7 +243,7 @@ dyn_var<value> morpho_vm(
                 left = reg[b];
                 right = reg[c];
                 reg[a] = op_pow(left, right, reg_type[b], reg_type[c]);
-
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = pe_t_note::FLOAT;
                 break;
 
@@ -251,6 +253,7 @@ dyn_var<value> morpho_vm(
 
                 // reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(left, right, reg_type[b], reg_type[c]));
                 reg[a] = X_MORPHO_BOOL(!x_morpho_extendedcomparevalue(left, right, reg_type[b], reg_type[c]));
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_NEQ:
@@ -258,12 +261,14 @@ dyn_var<value> morpho_vm(
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right, reg_type[b], reg_type[c]));
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_NOT:
                 left = reg[b];
 
                 reg[a] = op_not(left, reg_type[b]);
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_LT: //LT
@@ -271,6 +276,7 @@ dyn_var<value> morpho_vm(
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right, reg_type[b], reg_type[c]) > MORPHO_EQUAL);
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_LE: //LT
@@ -278,6 +284,7 @@ dyn_var<value> morpho_vm(
                 right = reg[c];
 
                 reg[a] = X_MORPHO_BOOL(x_morpho_extendedcomparevalue(left, right, reg_type[b], reg_type[c]) >= MORPHO_EQUAL);
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_B: // B
@@ -315,6 +322,7 @@ dyn_var<value> morpho_vm(
                     }
                 }
                 // for now function calls will be completely opaque
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = pe_t_note::UNKNOWN;
                 break;
             case OP_RETURN:
