@@ -4,3 +4,5 @@ main
 build
 .DS_Store
 CMakeFiles
+baseline/
+output/
