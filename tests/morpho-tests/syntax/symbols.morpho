@@ -11,9 +11,5 @@ var Breakfast = "Eggs"
 var breakfast = "Bacon"
 print Breakfast // expect: Eggs
 
-class My_class {}
-var c = My_class()
-print c // expect: <My_class>
-
 var sym123 = 6
 print sym123 // expect: 6

@@ -19,12 +19,23 @@
 void* compile_and_load_lib(const char* filepath) {
     char cmd[256];
 #ifdef DEBUG
-    snprintf(cmd, sizeof(cmd), "gcc -g -fno-omit-frame-pointer -shared -fPIC -Wno-incompatible-pointer-types -Wno-int-conversion %s -o /tmp/pe_out.so", filepath);
+    snprintf(cmd, sizeof(cmd), "cc -g -fno-omit-frame-pointer -shared -fPIC -lmorpho -L/usr/local/lib -I/usr/local/include -Wno-incompatible-pointer-types -Wno-int-conversion %s -o /tmp/pe_out.so", filepath);
 #else
-    snprintf(cmd, sizeof(cmd), "gcc -O3 -shared -fPIC -Wno-incompatible-pointer-types -Wno-int-conversion %s -o /tmp/pe_out.so", filepath);
+    snprintf(cmd, sizeof(cmd), "cc -O3 -shared -fPIC -L/usr/local/lib -I/usr/local/include -lmorpho -Wno-incompatible-pointer-types -Wno-int-conversion %s -o /tmp/pe_out.so", filepath);
 #endif
-    system(cmd);
-    return dlopen("/tmp/pe_out.so", RTLD_NOW);
+    int rc = system(cmd);
+    if (rc != 0) {
+        std::cerr << "Compilation failed\n";
+        exit(1);
+    }
+
+    void* lib = dlopen("/tmp/pe_out.so", RTLD_NOW);
+    if (!lib) {
+        std::cerr << "dlopen failed: " << dlerror() << "\n";
+        exit(1);
+}
+
+return lib;
 }
 
 void generate_userfn_asts(

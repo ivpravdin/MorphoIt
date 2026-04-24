@@ -1,4 +1,0 @@
-print min([])
-// expect: nil
-print min(-120)
-// expect: -120

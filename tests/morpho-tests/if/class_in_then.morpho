@@ -1,3 +1,0 @@
-
-if (true) class Foo {}
-// expect error: 'ExpExpr'

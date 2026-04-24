@@ -55,6 +55,9 @@ std::string generate_fnobj_definition(const objectfunction *const fn) {
 }
 
 void print_wrapper_code(std::ostream &oss) {
-	oss << "#define FOR_RUNTIME\n";
-	oss << header;
+    oss << "#define FOR_RUNTIME\n";
+    oss << header;
+    oss << "\n#include <stdio.h>\n";
+    oss << "#include <stdarg.h>\n";
+    oss << "#include <stddef.h>\n";
 }

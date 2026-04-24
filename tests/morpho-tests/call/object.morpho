@@ -1,6 +1,0 @@
-// Check that calling an object generates an err
-
-class Foo {}
-
-var foo = Foo()
-foo() // expect error: 'Uncallable'

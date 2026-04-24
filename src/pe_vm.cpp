@@ -79,7 +79,7 @@ dyn_var<value> morpho_vm_rec(
                     const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
 
                     // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
-                    dyn_var<struct userfn_object> runtime_fn_obj = builder::with_name(get_mangled_fnobj_name(morpho_fn));;
+                    dyn_var<struct userfn_object> runtime_fn_obj = builder::with_name(get_mangled_fnobj_name(morpho_fn));
                     reg[a] = X_MORPHO_OBJECT(&runtime_fn_obj);
                     reg_stat[a] = globalfn->konst.data[bx];
                 } else {
@@ -130,14 +130,14 @@ dyn_var<value> morpho_vm_rec(
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = X_MORPHO_BOOL(!runtime::morpho_extendedcomparevalue(left, right));
+                reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right) == MORPHO_EQUAL);
                 reg_stat[a] = MORPHO_NIL;
                 break;
             case OP_NEQ:
                 left = reg[b];
                 right = reg[c];
 
-                reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right));
+                reg[a] = X_MORPHO_BOOL(runtime::morpho_extendedcomparevalue(left, right) != MORPHO_EQUAL);
                 reg_stat[a] = MORPHO_NIL;
                 break;
             case OP_NOT:

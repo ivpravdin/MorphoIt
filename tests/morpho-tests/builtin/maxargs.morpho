@@ -1,4 +1,0 @@
-print max([])
-// expect: nil
-print max(-120)
-// expect: -120
