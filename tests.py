@@ -167,6 +167,15 @@ def run_comparison(test_dir: Path, baseline_dir: Path, output_dir: Path):
         if rc != 0:
             status = "ERROR (runtime)"
             reason = f"nonzero return code: {rc}"
+
+        elif not o_out.exists():
+            status = "ERROR (no output)"
+            reason = "output file was not generated"
+
+        elif not b_out.exists():
+            status = "ERROR (missing baseline)"
+            reason = "baseline output file missing"
+
         elif clean_output(b_out.read_bytes()) != clean_output(o_out.read_bytes()):
             status = "ERROR (output mismatch)"
             reason = "program output differs from morpho6 baseline"
@@ -193,6 +202,7 @@ def run_comparison(test_dir: Path, baseline_dir: Path, output_dir: Path):
 
         if status != "MATCH":
             failures += 1
+
             if stderr:
                 print("--- STDERR ---")
                 print(stderr.decode("utf-8", errors="replace").strip())
