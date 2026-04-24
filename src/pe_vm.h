@@ -12,7 +12,8 @@ builder::dyn_var<value> morpho_vm(
     const int n,
     const uint32_t *const instructions,
     const objectfunction *const globalfn,
-    std::map<uintptr_t, block::stmt::Ptr> &subfn_asts
+    std::map<uintptr_t, block::stmt::Ptr> &subfn_asts,
+    const bool is_main
 );
 
 #endif // PE_VM_H

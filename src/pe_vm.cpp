@@ -33,6 +33,88 @@ dyn_var<value> op_add(dyn_var<value> lhs, dyn_var<value> rhs, pe_t_note lh_t, pe
     return runtime::op_add(lhs, rhs);
 }
 
+dyn_var<value> op_sub(dyn_var<value> lhs, dyn_var<value> rhs, pe_t_note lh_t, pe_t_note rh_t) {
+    if (lh_t == pe_t_note::INT) {
+        if (rh_t == pe_t_note::INT) {
+            return X_MORPHO_INTEGER(X_MORPHO_GETINTEGERVALUE(lhs) - X_MORPHO_GETINTEGERVALUE(rhs));
+        } else if (rh_t == pe_t_note::FLOAT) {
+            return X_MORPHO_FLOAT(X_MORPHO_GETINTEGERVALUE(lhs) - X_MORPHO_GETFLOATVALUE(rhs));
+        }
+    } else if (lh_t == pe_t_note::FLOAT) {
+        if (rh_t == pe_t_note::INT) {
+            return X_MORPHO_FLOAT(X_MORPHO_GETFLOATVALUE(lhs) - X_MORPHO_GETINTEGERVALUE(rhs));
+        } else if (rh_t == pe_t_note::FLOAT) {
+            return X_MORPHO_FLOAT(X_MORPHO_GETFLOATVALUE(lhs) - X_MORPHO_GETFLOATVALUE(rhs));
+        }
+    }
+
+    return runtime::op_sub(lhs, rhs);
+}
+
+dyn_var<value> op_mul(dyn_var<value> lhs, dyn_var<value> rhs, pe_t_note lh_t, pe_t_note rh_t) {
+    if (lh_t == pe_t_note::INT) {
+        if (rh_t == pe_t_note::INT) {
+            return X_MORPHO_INTEGER(X_MORPHO_GETINTEGERVALUE(lhs) * X_MORPHO_GETINTEGERVALUE(rhs));
+        } else if (rh_t == pe_t_note::FLOAT) {
+            return X_MORPHO_FLOAT(X_MORPHO_GETINTEGERVALUE(lhs) * X_MORPHO_GETFLOATVALUE(rhs));
+        }
+    } else if (lh_t == pe_t_note::FLOAT) {
+        if (rh_t == pe_t_note::INT) {
+            return X_MORPHO_FLOAT(X_MORPHO_GETFLOATVALUE(lhs) * X_MORPHO_GETINTEGERVALUE(rhs));
+        } else if (rh_t == pe_t_note::FLOAT) {
+            return X_MORPHO_FLOAT(X_MORPHO_GETFLOATVALUE(lhs) * X_MORPHO_GETFLOATVALUE(rhs));
+        }
+    }
+
+    return runtime::op_add(lhs, rhs);
+}
+
+dyn_var<value> op_div(dyn_var<value> lhs, dyn_var<value> rhs, pe_t_note lh_t, pe_t_note rh_t) {
+    if (lh_t == pe_t_note::INT) {
+        if (rh_t == pe_t_note::INT) {
+            return X_MORPHO_FLOAT((dyn_var<double>) X_MORPHO_GETINTEGERVALUE(lhs) / (dyn_var<double>) X_MORPHO_GETINTEGERVALUE(rhs));
+        } else if (rh_t == pe_t_note::FLOAT) {
+            return X_MORPHO_FLOAT(X_MORPHO_GETINTEGERVALUE(lhs) / X_MORPHO_GETFLOATVALUE(rhs));
+        }
+    } else if (lh_t == pe_t_note::FLOAT) {
+        if (rh_t == pe_t_note::INT) {
+            return X_MORPHO_FLOAT(X_MORPHO_GETFLOATVALUE(lhs) / X_MORPHO_GETINTEGERVALUE(rhs));
+        } else if (rh_t == pe_t_note::FLOAT) {
+            return X_MORPHO_FLOAT(X_MORPHO_GETFLOATVALUE(lhs) / X_MORPHO_GETFLOATVALUE(rhs));
+        }
+    }
+
+    return runtime::op_div(lhs, rhs);
+}
+
+dyn_var<value> op_pow(dyn_var<value> lhs, dyn_var<value> rhs, pe_t_note lh_t, pe_t_note rh_t) {
+    if (lh_t == pe_t_note::INT) {
+        if (rh_t == pe_t_note::INT) {
+            return X_MORPHO_FLOAT(runtime::pow((dyn_var<double>) X_MORPHO_GETINTEGERVALUE(lhs), (dyn_var<double>) X_MORPHO_GETINTEGERVALUE(rhs)));
+        } else if (rh_t == pe_t_note::FLOAT) {
+            return X_MORPHO_FLOAT(runtime::pow((dyn_var<double>) X_MORPHO_GETINTEGERVALUE(lhs), X_MORPHO_GETFLOATVALUE(rhs)));
+        }
+    } else if (lh_t == pe_t_note::FLOAT) {
+        if (rh_t == pe_t_note::INT) {
+            return X_MORPHO_FLOAT(runtime::pow(X_MORPHO_GETFLOATVALUE(lhs), (dyn_var<double>) X_MORPHO_GETINTEGERVALUE(rhs)));
+        } else if (rh_t == pe_t_note::FLOAT) {
+            return X_MORPHO_FLOAT(runtime::pow(X_MORPHO_GETFLOATVALUE(lhs), X_MORPHO_GETFLOATVALUE(rhs)));
+        }
+    }
+
+    return runtime::op_pow(lhs, rhs);
+}
+
+dyn_var<value> op_not(dyn_var<value> val, pe_t_note t) {
+    if (t == pe_t_note::UNKNOWN) return runtime::op_not(val);
+
+    if (t == pe_t_note::BOOL) {
+        return MORPHO_BOOL(!MORPHO_GETBOOLVALUE(val));
+    }
+
+    return MORPHO_FALSE;
+}
+
 
 class UnimplementedInstructionException: public std::exception
 {
@@ -50,12 +132,13 @@ class OutOfBoundsPCException: public std::exception
   }
 };
 
-dyn_var<value> morpho_vm_rec(
+dyn_var<value> morpho_vm(
     dyn_var<value *> args, // all buildit examples have dyns first, idk why
     const int n,
     const instruction * const instructions,
     const objectfunction * const globalfn,
-    std::map<uintptr_t, block::stmt::Ptr> &subfn_asts
+    std::map<uintptr_t, block::stmt::Ptr> &subfn_asts,
+    const bool is_main
 ) {
     // declare arr "reg" with nregs elements
     dyn_var<value[]> reg = builder::with_name("reg", true);
@@ -81,7 +164,7 @@ dyn_var<value> morpho_vm_rec(
 
     // init'ing reg[0]
     // for now we'll just do this, since, e.g. the globalfn has a NULL name
-    if (MORPHO_ISOBJECT(globalfn->name)) {
+    if (!is_main) {
         dyn_var<struct userfn_object> runtime_fn_obj = builder::with_name(get_mangled_fnobj_name(globalfn));
         reg[0] = X_MORPHO_OBJECT(&runtime_fn_obj);
     }
@@ -109,15 +192,6 @@ dyn_var<value> morpho_vm_rec(
 
             case OP_LCT:
                 if (MORPHO_ISFUNCTION(globalfn->konst.data[bx])) {
-                    // The purpose of the below block is to produce
-                    // the C code that looks like:
-                    //
-                    //      struct userfn_object var1;
-                    //      var1.type = 4;
-                    //      var1.fn = morpho_userfn_f;
-                    //      unsigned long int var2 = &var1;
-                    //      unsigned long int var3 = MORPHO_OBJECT(var2)
-
                     const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
 
                     // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
@@ -145,20 +219,20 @@ dyn_var<value> morpho_vm_rec(
             case OP_SUB:
                 left = reg[b], right = reg[c];
 
-                reg[a] = runtime::op_sub(left, right);
+                reg[a] = op_sub(left, right, reg_type[b], reg_type[c]);
                 reg_type[a] = arith_binop_typerule(reg_type[b], reg_type[c]);
                 break;
 
             case OP_MUL:
                 left = reg[b], right = reg[c];
-                reg[a] = runtime::op_mul(left, right);
+                reg[a] = op_mul(left, right, reg_type[b], reg_type[c]);
                 reg_type[a] = arith_binop_typerule(reg_type[b], reg_type[c]);
 
                 break;
 
             case OP_DIV:
                 left = reg[b], right = reg[c];
-                reg[a] = runtime::op_div(left, right);
+                reg[a] = op_div(left, right, reg_type[b], reg_type[c]);
 
                 reg_type[a] = pe_t_note::FLOAT;
                 break;
@@ -166,7 +240,7 @@ dyn_var<value> morpho_vm_rec(
             case OP_POW: //POW
                 left = reg[b];
                 right = reg[c];
-                reg[a] = runtime::op_pow(left, right);
+                reg[a] = op_pow(left, right, reg_type[b], reg_type[c]);
 
                 reg_type[a] = pe_t_note::FLOAT;
                 break;
@@ -189,7 +263,7 @@ dyn_var<value> morpho_vm_rec(
             case OP_NOT:
                 left = reg[b];
 
-                reg[a] = runtime::op_not(left);
+                reg[a] = op_not(left, reg_type[b]);
                 reg_type[a] = pe_t_note::BOOL;
                 break;
             case OP_LT: //LT
@@ -271,21 +345,22 @@ dyn_var<value> morpho_vm_rec(
     throw OutOfBoundsPCException();
 }
 
-dyn_var<value> morpho_vm(
-    dyn_var<value *> args,
-    const int n,
-    const instruction *const instructions,
-    const objectfunction *const globalfn,
-    std::map<uintptr_t, block::stmt::Ptr> &subfn_asts
-) {
-    // std::cerr << "toplevel\n";
-    // declaration of globals is handled in header.c, no other way to make it
-    // actually global, apparently
-    return morpho_vm_rec(
-        args,
-        n,
-        instructions,
-        globalfn,
-        subfn_asts
-    );
-}
+// dyn_var<value> morpho_vm(
+//     dyn_var<value *> args,
+//     const int n,
+//     const instruction *const instructions,
+//     const objectfunction *const globalfn,
+//     const bool is_main,
+//     std::map<uintptr_t, block::stmt::Ptr> &subfn_asts
+// ) {
+//     // std::cerr << "toplevel\n";
+//     // declaration of globals is handled in header.c, no other way to make it
+//     // actually global, apparently
+//     return morpho_vm_rec(
+//         args,
+//         n,
+//         instructions,
+//         globalfn,
+//         subfn_asts
+//     );
+// }

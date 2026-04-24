@@ -44,7 +44,7 @@ void print(value val) {
 }
 
 extern inline value compare_double(double a, double b) {
-    if (a==b) return MORPHO_EQUAL; 
+    if (a==b) return MORPHO_EQUAL;
 
     double diff = fabs(a-b);
     double absa = fabs(a), absb=fabs(b);
@@ -56,8 +56,8 @@ extern inline value compare_double(double a, double b) {
     return (b>a ? MORPHO_BIGGER : MORPHO_SMALLER);
 }
 
-extern inline value compare_int(double a, double b) {
-    if (a==b) return MORPHO_EQUAL; 
+extern inline value compare_int(int32_t a, int32_t b) {
+    if (a==b) return MORPHO_EQUAL;
     return (b>a ? MORPHO_BIGGER : MORPHO_SMALLER);
 }
 
@@ -190,11 +190,36 @@ extern inline value call(value func, int nargs, value *args) {
 
     if (MORPHO_ISFUNCTION(func)) {
         userfn f = ((struct userfn_object *) MORPHO_GETOBJECT(func))->fn;
-        return f(args, nargs, NULL /* this is vargs, unimplemented */);
+        return f(args);
     }
     printf("Attempted to call function of type: %lld != %d", MORPHO_GETTYPE(func), OBJECT_BUILTINFUNCTION);
     exit(EXIT_FAILURE);
 }
+
+// program *p;
+// compiler *c;
+// error err;
+
+// int generate_morpho_compiler_objects() {
+//     morpho_initialize();
+//     p = morpho_newprogram();
+//     c = morpho_newcompiler(p);
+//     error_init(&err);
+
+//     if (!morpho_compile(MORPHO_SRC_CODE, c, false, &err)) {
+//         fprintf(stderr, "Morpho compilation error [%s]: %s\n", err.id, err.msg);
+//         morpho_freeprogram(p);
+//         morpho_freecompiler(c);
+//         morpho_finalize();
+//         exit(EXIT_FAILURE);
+//     }
+// }
+
+// void cleanup_morpho_compiler_objects() {
+//     morpho_freeprogram(p);
+//     morpho_freecompiler(c);
+//     morpho_finalize();
+// }
 
 // HEADER_C END ////////////////////////////////////////////////////////////////
 

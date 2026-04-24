@@ -100,7 +100,7 @@ DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(
     const pe_t_note a_t,
     const pe_t_note b_t
 ) {
-    std::cerr << "received types of: " << a_t << " & " << b_t << "\n";
+    // std::cerr << "received types of: " << a_t << " & " << b_t << "\n";
     if (a_t == pe_t_note::UNKNOWN || b_t == pe_t_note::UNKNOWN) return runtime::morpho_extendedcomparevalue(a, b);
     if (a_t == b_t) return x_morpho_comparevalue(a, b, a_t);
 

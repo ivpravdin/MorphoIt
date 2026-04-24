@@ -52,7 +52,8 @@ void generate_userfn_asts(
                     ninstructions,
                     bytecode,
                     fn,
-                    userfn_asts
+                    userfn_asts,
+                    false
             );
             auto [_, was_inserted] = userfn_asts.insert_or_assign(fnptr, std::move(ast));
             assert(was_inserted);
@@ -150,7 +151,8 @@ int main(int argc, char* argv[]) {
                 ninstructions,
                 bytecode,
                 globalfn,
-                userfn_asts
+                userfn_asts,
+                true // indicate that it is main
         );
     } catch (std::exception &e) {
         std::cerr << "Partial evaluation exited early with error: '"
