@@ -30,7 +30,7 @@ void* compile_and_load_lib(const char* filepath) {
 void generate_userfn_asts(
     const varray_instruction &code,
     const varray_value &const_table,
-    std::map<uintptr_t, block::stmt::Ptr> &userfn_asts
+    userfn_map &userfn_asts
 ) {
     const size_t ninstructions = code.count;
     const instruction *bytecode = (instruction *) code.data;
@@ -38,27 +38,36 @@ void generate_userfn_asts(
 
     for (size_t i = 0; i < nconsts; i++) {
         if (MORPHO_ISFUNCTION(const_table.data[i])) {
-            objectfunction *fn = MORPHO_GETFUNCTION(const_table.data[i]);
-            uintptr_t fnptr = (uintptr_t) fn;
+            userfn_sig sig = {
+                .objfn = MORPHO_GETFUNCTION(const_table.data[i]),
+            };
 
-            if (userfn_asts.count(fnptr) > 0) break;
+            // we only want to PE each function once
+            if (userfn_asts.count(sig) > 0) break;
 
-            std::cerr << "[PE'ing..." <<  get_mangled_fn_name(fn) << "]\n";
+            // it is actually critically we add this BEFORE we do the PE because
+            // of how we do type inference
+            auto [deets, was_inserted] = userfn_asts.insert_or_assign(
+                sig,
+                userfn_details()
+            );
+            assert(was_inserted);
 
+
+            std::cerr << "[PE'ing..." <<  get_mangled_fn_name(sig) << "]\n";
             builder::builder_context ctxt;
             auto ast = ctxt.extract_function_ast(
                 morpho_vm,
-                    get_mangled_fn_name(fn),
+                    get_mangled_fn_name(sig),
                     ninstructions,
                     bytecode,
-                    fn,
+                    sig,
                     userfn_asts,
                     false
             );
-            auto [_, was_inserted] = userfn_asts.insert_or_assign(fnptr, std::move(ast));
-            assert(was_inserted);
+            deets->second.fnast = std::move(ast);
 
-            generate_userfn_asts(code, fn->konst, userfn_asts);
+            generate_userfn_asts(code, sig.objfn->konst, userfn_asts);
         }
     }
 }
@@ -138,8 +147,7 @@ int main(int argc, char* argv[]) {
 
     std::ofstream out_c_file(TMP_C_FILE);
 
-
-    std::map<uintptr_t, block::stmt::Ptr> userfn_asts;
+    userfn_map userfn_asts;
     block::stmt::Ptr ast;
 
     try {
@@ -150,7 +158,7 @@ int main(int argc, char* argv[]) {
             "main_morpho",
                 ninstructions,
                 bytecode,
-                globalfn,
+                userfn_sig {.objfn = globalfn},
                 userfn_asts,
                 true // indicate that it is main
         );
@@ -168,13 +176,13 @@ int main(int argc, char* argv[]) {
     std::cerr << "[CODE GENERATED]\n";
 
     // user fn declarations
-    for (auto [key, ast] : userfn_asts) {
-        block::c_code_generator::generate_code(ast, out_c_file, 0, true);
-        out_c_file << generate_fnobj_definition((objectfunction *) key);
+    for (auto [sig, details] : userfn_asts) {
+        block::c_code_generator::generate_code(details.fnast, out_c_file, 0, true);
+        out_c_file << generate_fnobj_definition(sig);
     }
     // user fn definitions
-    for (auto [key, ast] : userfn_asts) {
-        block::c_code_generator::generate_code(ast, out_c_file, 0);
+    for (auto [_, details] : userfn_asts) {
+        block::c_code_generator::generate_code(details.fnast, out_c_file, 0);
     }
 
     // main

@@ -3,7 +3,7 @@
 #include <value.h>
 
 #include "pe_vm_consts.h"
-
+#include "pe_vm.h"
 #include "generated_header.h"
 
 namespace runtime {
@@ -33,26 +33,33 @@ namespace runtime {
 	#undef RUNTIME_FN
 }
 
-std::string get_mangled_fn_name(const objectfunction *const fn) {
+std::string get_mangled_fn_name(const userfn_sig &sig, bool genericize) {
     std::string name = std::string(USERFN_NAME_PREFIX);
-    if (MORPHO_ISOBJECT(fn->name)) {
-        name += MORPHO_GETCSTRING(fn->name);
+    if (MORPHO_ISOBJECT(sig.objfn->name)) {
+        name += MORPHO_GETCSTRING(sig.objfn->name);
         name += "_";
     }
-    name += std::to_string((uintptr_t) fn);
+    name += std::to_string((uintptr_t) sig.objfn);
+
+	// use genericize to force to get generic name, even if is a specialized fn
+	if (!genericize && sig.argtypes.has_value()) {
+		for (pe_t_note t : sig.argtypes.value()) {
+			name += "_t" + std::to_string(t);
+		}
+	}
     return std::move(name);
 }
 
-std::string get_mangled_fnobj_name(const objectfunction *const fn) {
-    return get_mangled_fn_name(fn) + USERFNOBJ_NAME_SUFFIX;
+std::string get_mangled_fnobj_name(const userfn_sig &sig, bool genericize) {
+    return get_mangled_fn_name(sig, genericize) + USERFNOBJ_NAME_SUFFIX;
 }
 
-std::string generate_fnobj_definition(const objectfunction *const fn) {
+std::string generate_fnobj_definition(const userfn_sig &sig, bool genericize) {
 	return "const struct userfn_object "
-		+ get_mangled_fnobj_name(fn)
+		+ get_mangled_fnobj_name(sig, genericize)
 		+ " = { "
 		+ ".type = " + std::to_string(objectfunctiontype) + ", " +
-		+ ".fn = " + get_mangled_fn_name(fn)
+		+ ".fn = " + get_mangled_fn_name(sig, genericize)
 		+ " };\n";
 }
 

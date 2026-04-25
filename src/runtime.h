@@ -3,6 +3,7 @@
 
 #include <ostream>
 #include "value.h" // <- the local one
+#include "pe_vm.h"
 
 constexpr const char USERFN_NAME_PREFIX[] = "morpho_userfn_";
 constexpr const char USERFNOBJ_NAME_SUFFIX[] = "_wrapperstruct";
@@ -34,9 +35,10 @@ namespace runtime {
 	#undef DECL_RUNTIME_FN
 }
 
-std::string get_mangled_fn_name(const objectfunction *const fn);
+std::string get_mangled_fn_name(const userfn_sig &sig, bool genericize=false);
+std::string get_mangled_fnobj_name(const userfn_sig &sig, bool genericize=false);
+std::string generate_fnobj_definition(const userfn_sig &sig, bool genericize=false);
+
 void print_wrapper_code(std::ostream &oss);
-std::string get_mangled_fnobj_name(const objectfunction *const fn);
-std::string generate_fnobj_definition(const objectfunction *const fn);
 
 #endif // BUILTIN_H

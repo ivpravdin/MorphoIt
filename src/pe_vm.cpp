@@ -116,66 +116,65 @@ dyn_var<value> op_not(dyn_var<value> val, pe_t_note t) {
 }
 
 
-class UnimplementedInstructionException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "Unimplemented instruction encountered.";
-  }
-};
-
-class OutOfBoundsPCException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "Program counter exceeded bytecode buffer.";
-  }
-};
 
 dyn_var<value> morpho_vm(
     dyn_var<value *> args, // all buildit examples have dyns first, idk why
     const int n,
     const instruction * const instructions,
-    const objectfunction * const globalfn,
-    std::map<uintptr_t, block::stmt::Ptr> &subfn_asts,
+    const userfn_sig &sig,
+    userfn_map &subfn_asts,
     const bool is_main
 ) {
+    const objectfunction *const thisfn = sig.objfn;
     // declare arr "reg" with nregs elements
+
+
     dyn_var<value[]> reg = builder::with_name("reg", true);
-    builder::resize_arr(reg, globalfn->nregs);
+    builder::resize_arr(reg, thisfn->nregs);
+    std::vector<static_var<value>> reg_stat(thisfn->nregs);
+    std::vector<static_var<pe_t_note>> reg_type(thisfn->nregs);
+    // main not only can't call itself recursively, it also doesn't follow the
+    // mangled naming convention, so this wouldn't work.
+    // nonetheless maybe this ought to be made to work
+    // if (!is_main) {
+    //     // can't specialize until calltime, so even if this function has a specialized
+    //     // signature we force it to use the generic name
+    //     dyn_var<const struct userfn_object> runtime_fn_obj = builder::with_name(
+    //         get_mangled_fnobj_name(sig, true)
+    //     );
+    //     // TODO something about casts doesn't fucking work
+    //     reg[0] = X_MORPHO_OBJECT(&runtime_fn_obj);
+    // }
+    reg_stat[0] = MORPHO_OBJECT(thisfn);
+    reg_type[0] = pe_t_note::OBJECT;
 
-    dyn_var<value[PE_NUM_GLOBALS]> globals = builder::with_name(PE_GLOBALSBUF_NAME);
-    dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);
-
-    std::vector<static_var<value>> reg_stat(globalfn->nregs);
-    std::vector<static_var<pe_t_note>> reg_type(globalfn->nregs);
-    std::vector<static_var<pe_t_note>> global_type(PE_NUM_GLOBALS);
-
-    for (static_var<size_t> i = 0; i < globalfn->nregs; i++) {
+    const size_t total_args = thisfn->nargs + thisfn->nopt;
+    for (static_var<size_t> i = 0; i < total_args; i++) {
+        reg[i + 1] = args[i + 1];
+    }
+    for (static_var<size_t> i = 0; i < thisfn->nregs; i++) {
         reg_stat[i] = MORPHO_NIL;
         reg_type[i] = pe_t_note::UNKNOWN;
     }
+    if (sig.argtypes.has_value()) {
+        size_t nargtypes = sig.argtypes->size();
+        for (size_t i = 0; i < nargtypes; i++) {
+            reg_type[i] = sig.argtypes.value()[i];
+        }
+    }
 
+
+    // globals
+    dyn_var<value[PE_NUM_GLOBALS]> globals = builder::with_name(PE_GLOBALSBUF_NAME);
+    std::vector<static_var<pe_t_note>> global_type(PE_NUM_GLOBALS);
     for (static_var<size_t> i = 0; i < PE_NUM_GLOBALS; i++) {
         global_type[i] = pe_t_note::UNKNOWN;
     }
 
-    static_var<instruction> pc = globalfn->entry;
 
-    // init'ing reg[0]
-    // for now we'll just do this, since, e.g. the globalfn has a NULL name
-    if (!is_main) {
-        dyn_var<struct userfn_object> runtime_fn_obj = builder::with_name(get_mangled_fnobj_name(globalfn));
-        reg[0] = X_MORPHO_OBJECT(&runtime_fn_obj);
-    }
-    reg_stat[0] = MORPHO_OBJECT(globalfn);
-    reg_type[0] = pe_t_note::OBJECT;
 
-    // loading args into regs
-    const size_t total_args = globalfn->nargs + globalfn->nopt;
-    for (static_var<size_t> i = 0; i < total_args; i++) {
-        reg[i + 1] = args[i + 1];
-    }
+    dyn_var<value> left = builder::with_name("left", true), right = builder::with_name("right", true);
+    static_var<instruction> pc = thisfn->entry;
 
     while (pc < n) {
         const instruction bc = instructions[pc];
@@ -191,21 +190,25 @@ dyn_var<value> morpho_vm(
                 break;
 
             case OP_LCT:
-                if (MORPHO_ISFUNCTION(globalfn->konst.data[bx])) {
-                    const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(globalfn->konst.data[bx]);
+                if (MORPHO_ISFUNCTION(thisfn->konst.data[bx])) {
+                    const objectfunction *const morpho_fn = MORPHO_GETFUNCTION(thisfn->konst.data[bx]);
 
                     // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
-                    dyn_var<struct userfn_object> runtime_fn_obj = builder::with_name(get_mangled_fnobj_name(morpho_fn));;
+                    dyn_var<const struct userfn_object> runtime_fn_obj = builder::with_name(
+                        get_mangled_fnobj_name(
+                            userfn_sig { .objfn = morpho_fn }
+                        )
+                    );
                     reg[a] = X_MORPHO_OBJECT(&runtime_fn_obj);
-                    reg_stat[a] = globalfn->konst.data[bx];
+                    reg_stat[a] = thisfn->konst.data[bx];
                 } else {
                     // for other objects...
                     // maybe generate C code equivalent to "get it from the RUNTIME
                     // constant table!" I think that's perfect
                     // aside from any objects types want to statically eval
-                    reg[a] = globalfn->konst.data[bx];
+                    reg[a] = thisfn->konst.data[bx];
                 }
-                reg_type[a] = gettypeannotation(globalfn->konst.data[bx]);
+                reg_type[a] = gettypeannotation(thisfn->konst.data[bx]);
                 // std::cerr << "Loaded const of type: " << reg_type[a] << "\n";
                 break;
 
@@ -304,32 +307,33 @@ dyn_var<value> morpho_vm(
             case OP_CALL: // CALL (no support for optional arguments yet)
                 left = reg[a];
                 {
-                    // global state is opaque after a function call
-                    for (static_var<size_t> i = 0; i < PE_NUM_GLOBALS; i++) {
-                        global_type[i] = pe_t_note::UNKNOWN;
-                    }
-
                     const value func = reg_stat[a];
 
                     if (MORPHO_ISFUNCTION(reg_stat[a])) {
-                        dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name(MORPHO_GETFUNCTION(func)));
+                        dyn_var<userfn *> fn_ptr = builder::with_name(get_mangled_fn_name({ .objfn = MORPHO_GETFUNCTION(func) }, true));
                         reg[a] = fn_ptr(&reg[a]);
-                        // reg_type[a] = MORPHO_GETFUNCTION(func)->sig.ret;
-                    }
-                    else {
-                        reg[a]=runtime::call(left, b, reg + a);
-                        // reg_type[a] = TAG_UNDEF_T;
+                        reg_type[a] = subfn_asts.at(userfn_sig { .objfn = MORPHO_GETFUNCTION(reg_stat[a]) /*TODO the args*/ }).get_returntype();
+                    } else {
+                        reg[a]=runtime::call(left, b, &reg[a]);
+                        reg_type[a] = pe_t_note::UNKNOWN;
                     }
                 }
+
+                // global state is opaque after a function call
+                for (static_var<size_t> i = 0; i < PE_NUM_GLOBALS; i++) {
+                    global_type[i] = pe_t_note::UNKNOWN;
+                }
                 // for now function calls will be completely opaque
-                reg_stat[a] = MORPHO_NIL;
-                reg_type[a] = pe_t_note::UNKNOWN;
                 break;
             case OP_RETURN:
-                if (a>0)
+                if (a>0) {
+                    subfn_asts.at(sig).update_returntype(reg_type[b]);
                     return reg[b];
-                else
+                }
+                else {
+                    subfn_asts.at(sig).update_returntype(pe_t_note::NIL);
                     return MORPHO_NIL;
+                }
                 break;
             case OP_LGL: // LGL
                 reg[a]      = globals[bx];
@@ -357,7 +361,7 @@ dyn_var<value> morpho_vm(
 //     dyn_var<value *> args,
 //     const int n,
 //     const instruction *const instructions,
-//     const objectfunction *const globalfn,
+//     const objectfunction *const thisfn,
 //     const bool is_main,
 //     std::map<uintptr_t, block::stmt::Ptr> &subfn_asts
 // ) {
@@ -368,7 +372,7 @@ dyn_var<value> morpho_vm(
 //         args,
 //         n,
 //         instructions,
-//         globalfn,
+//         thisfn,
 //         subfn_asts
 //     );
 // }
