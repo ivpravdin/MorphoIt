@@ -6,14 +6,26 @@
 using builder::dyn_var;
 using builder::static_var;
 
+std::string gettypename(pe_t_note t) {
+    switch (t) {
+        case pe_t_note::INT: return "int"; break;
+        case pe_t_note::BOOL: return "bool"; break;
+        case pe_t_note::NIL: return "nil"; break;
+        case pe_t_note::OBJECT: return "obj"; break;
+        case pe_t_note::FLOAT: return "float"; break;
+        case pe_t_note::UNKNOWN: return "unknown"; break;
+        default: return "ERROR!";
+    }
+}
 pe_t_note gettypeannotation(value v) {
+    if (MORPHO_ISFLOAT(v)) return pe_t_note::FLOAT;
     switch (MORPHO_GETTYPE(v)) {
         case TAG_INT:  return pe_t_note::INT;
         case TAG_BOOL: return pe_t_note::BOOL;
         case TAG_NIL:  return pe_t_note::NIL;
         case TAG_OBJ:  return pe_t_note::OBJECT;
-        default:       return pe_t_note::FLOAT;
     }
+    assert(false);
 }
 
 pe_t_note arith_binop_typerule(value t1, value t2) {
@@ -55,11 +67,6 @@ DYNAMIFY_TYPE(int) x_morpho_comparevalue(
     if (types == pe_t_note::FLOAT) {
         DYNAMIFY_TYPE(double) aa = X_MORPHO_GETFLOATVALUE(a);
         DYNAMIFY_TYPE(double) bb = X_MORPHO_GETFLOATVALUE(b);
-        // Before there used to be a line here like:
-        // if (x_morpho_doubleeqtest(aa, bb)) return MORPHO_EQUAL; // TODO: this kills us
-        // return (bb>aa ? MORPHO_BIGGER : MORPHO_SMALLER);
-        // but if's and ternary's on dyn_var's require buildit to do reevaluations
-        // plus I'd want the C-compiler to figure out inlining on something like this
         return runtime::compare_double(aa, bb);
     }
 
@@ -77,11 +84,10 @@ DYNAMIFY_TYPE(int) x_morpho_comparevalue(
         return (X_MORPHO_GETBOOLVALUE(b) != X_MORPHO_GETBOOLVALUE(a));
     }
     
-    // if (MORPHO_ISOBJECT(a)) {
+    // if (types == pe_t_note::OBJECT(a)) {
     //     if (X_MORPHO_GETOBJECTTYPE(a)!=X_MORPHO_GETOBJECTTYPE(b)) {
     //         return 1;
     //     }
-    //     // TODO: write object_cmp for dyn_var
     //     //return object_cmp(X_MORPHO_GETOBJECT(a), X_MORPHO_GETOBJECT(b));
     // }
     
@@ -100,8 +106,10 @@ DYNAMIFY_TYPE(int) x_morpho_extendedcomparevalue(
     const pe_t_note a_t,
     const pe_t_note b_t
 ) {
-    // std::cerr << "received types of: " << a_t << " & " << b_t << "\n";
     if (a_t == pe_t_note::UNKNOWN || b_t == pe_t_note::UNKNOWN) return runtime::morpho_extendedcomparevalue(a, b);
+    // atm no special typing rules for objects
+    if (a_t == pe_t_note::OBJECT || b_t == pe_t_note::OBJECT) return runtime::morpho_extendedcomparevalue(a, b);
+
     if (a_t == b_t) return x_morpho_comparevalue(a, b, a_t);
 
     DYNAMIFY_TYPE(value) aa=a, bb=b;

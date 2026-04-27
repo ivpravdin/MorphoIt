@@ -4,13 +4,14 @@
 #include <filesystem>
 #include <cstring>
 #include <dlfcn.h>
-#include <map>
 
 #include "blocks/c_code_generator.h"
 
 // Include the BuildIt types
 
 #include "morpho_header.h"
+#include "pe_vm_consts.h"
+#include "userfn.h"
 #include "pe_vm.h"
 #include "runtime.h"
 
@@ -27,50 +28,6 @@ void* compile_and_load_lib(const char* filepath) {
     return dlopen("/tmp/pe_out.so", RTLD_NOW);
 }
 
-void generate_userfn_asts(
-    const varray_instruction &code,
-    const varray_value &const_table,
-    userfn_map &userfn_asts
-) {
-    const size_t ninstructions = code.count;
-    const instruction *bytecode = (instruction *) code.data;
-    const size_t nconsts = const_table.count;
-
-    for (size_t i = 0; i < nconsts; i++) {
-        if (MORPHO_ISFUNCTION(const_table.data[i])) {
-            userfn_sig sig = {
-                .objfn = MORPHO_GETFUNCTION(const_table.data[i]),
-            };
-
-            // we only want to PE each function once
-            if (userfn_asts.count(sig) > 0) break;
-
-            // it is actually critically we add this BEFORE we do the PE because
-            // of how we do type inference
-            auto [deets, was_inserted] = userfn_asts.insert_or_assign(
-                sig,
-                userfn_details()
-            );
-            assert(was_inserted);
-
-
-            std::cerr << "[PE'ing..." <<  get_mangled_fn_name(sig) << "]\n";
-            builder::builder_context ctxt;
-            auto ast = ctxt.extract_function_ast(
-                morpho_vm,
-                    get_mangled_fn_name(sig),
-                    ninstructions,
-                    bytecode,
-                    sig,
-                    userfn_asts,
-                    false
-            );
-            deets->second.fnast = std::move(ast);
-
-            generate_userfn_asts(code, sig.objfn->konst, userfn_asts);
-        }
-    }
-}
 
 int main(int argc, char* argv[]) {
     bool hexdump = false;
@@ -124,8 +81,8 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    varray_instruction *code = program_getbytecode(p);
-    objectfunction *globalfn = program_getglobalfn(p);
+    const varray_instruction *code = program_getbytecode(p);
+    const objectfunction *globalfn = program_getglobalfn(p);
 
     instruction *bytecode = (instruction *) code->data;
     int ninstructions = code->count;
@@ -148,20 +105,19 @@ int main(int argc, char* argv[]) {
     std::ofstream out_c_file(TMP_C_FILE);
 
     userfn_map userfn_asts;
-    block::stmt::Ptr ast;
 
+    // The partial evaluation
     try {
-        generate_userfn_asts(*code, globalfn->konst, userfn_asts);
-        std::cerr << "[PE'ing main]\n";
-        ast = context.extract_function_ast(
-            morpho_vm,
-            "main_morpho",
-                ninstructions,
-                bytecode,
-                userfn_sig {.objfn = globalfn},
-                userfn_asts,
-                true // indicate that it is main
-        );
+        generate_all_userfn_asts(globalfn, code, userfn_asts);
+        // ast = context.extract_function_ast(
+        //     morpho_vm,
+        //     "main_morpho",
+        //         ninstructions,
+        //         bytecode,
+        //         userfn_sig {.objfn = globalfn},
+        //         userfn_asts,
+        //         true // indicate that it is main
+        // );
     } catch (std::exception &e) {
         std::cerr << "Partial evaluation exited early with error: '"
                   << e.what()
@@ -170,28 +126,31 @@ int main(int argc, char* argv[]) {
         morpho_freecompiler(c);
         morpho_finalize();
         return EXIT_FAILURE;
+    } catch (const userfn_sig &sig) {
+        std::cerr << "Caught: " << sig.get_mangled_fn_name(false) << '\n';
+        return EXIT_FAILURE;
     }
 
+    std::cerr << "[PE COMPLETE]\n";
+    std::cerr << "[GENERATING CODE]\n";
     print_wrapper_code(out_c_file);
-    std::cerr << "[CODE GENERATED]\n";
 
     // user fn declarations
     for (auto [sig, details] : userfn_asts) {
+        std::cerr << "[declaring "  << details.runtime_name << "]\n";
         block::c_code_generator::generate_code(details.fnast, out_c_file, 0, true);
-        out_c_file << generate_fnobj_definition(sig);
+        out_c_file << generate_fnobj_definition(details);
     }
     // user fn definitions
     for (auto [_, details] : userfn_asts) {
         block::c_code_generator::generate_code(details.fnast, out_c_file, 0);
     }
 
-    // main
-    block::c_code_generator::generate_code(ast, out_c_file, 0);
     out_c_file.close();
 
     std::cerr << "[COMPILING]\n";
     void* lib = compile_and_load_lib(TMP_C_FILE);
-    auto main_morpho = (int (*)()) dlsym(lib, "main_morpho");
+    auto main_morpho = (int (*)()) dlsym(lib, PE_GLOBALFN_NAME);
     std::cerr << "[RUNNING]\n";
     int result = main_morpho();
     //std::cout << "Program exited with code " << result << std::endl;

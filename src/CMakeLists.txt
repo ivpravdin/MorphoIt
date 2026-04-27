@@ -33,4 +33,5 @@ target_sources(morphoit
         value.cpp
         pe_vm.cpp
         runtime.cpp
+        userfn.cpp
 )

@@ -16,7 +16,7 @@
 #include "pe_vm_consts.h"
 #endif
 
-value globals[PE_NUM_GLOBALS];
+value PE_GLOBALSBUF[PE_NUM_GLOBALS];
 
 void printint(int32_t x) {printf("%d\n", x);}
 void printfloat(double x) {printf("%g\n", x);}
@@ -189,7 +189,7 @@ extern inline value call(value func, int nargs, value *args) {
     }
 
     if (MORPHO_ISFUNCTION(func)) {
-        userfn f = ((struct userfn_object *) MORPHO_GETOBJECT(func))->fn;
+        literal_userfn f = ((struct literal_userfn_object *) MORPHO_GETOBJECT(func))->fn;
         return f(args);
     }
     printf("Attempted to call function of type: %lld != %d", MORPHO_GETTYPE(func), OBJECT_BUILTINFUNCTION);

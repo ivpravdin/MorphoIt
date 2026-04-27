@@ -2,16 +2,20 @@
 #define PE_VM_CONSTS_H
 
 // This header exists and is written the way it is so that certain constants
-// and notably the userfn type
+// and notably the literal_userfn type
 // can be used in both the PE VM and also in the runtime functions defined in
 // header.c
 
 #include <morpho/value.h>
 #include <morpho/object.h>
 
-typedef value (*userfn)(const value *const);
-#define PE_GLOBALSBUF_NAME "globals"
-#define PE_NUM_REGS 255
+typedef value (*literal_userfn)(const value *const);
+#define STRINGIFY(x) #x
+#define TOSTRING_MACRO(x) STRINGIFY(x)
+#define PE_GLOBALSBUF globals
+#define PE_GLOBALSBUF_NAME TOSTRING_MACRO(PE_GLOBALSBUF)
+#define PE_GLOBALFN main_morpho
+#define PE_GLOBALFN_NAME TOSTRING_MACRO(PE_GLOBALFN)
 #define PE_NUM_GLOBALS 100
 
 
@@ -28,12 +32,12 @@ typedef value (*userfn)(const value *const);
     #define STRUCT_TYPE_ANNOTATION(T) static constexpr const char* type_name = #T
 #endif
 
-struct userfn_object {
+struct literal_userfn_object {
     // TYPE(object *) obj
-    // TYPE(userfn *) fn;
+    // TYPE(literal_userfn *) fn;
     STRUCT_FIELD(objecttype, type);
-    STRUCT_FIELD(userfn *, fn);
-    STRUCT_TYPE_ANNOTATION(struct userfn_object);
+    STRUCT_FIELD(literal_userfn *, fn);
+    STRUCT_TYPE_ANNOTATION(struct literal_userfn_object);
 };
 
 #undef STRUCT_TYPE

@@ -3,10 +3,8 @@
 
 #include <ostream>
 #include "value.h" // <- the local one
-#include "pe_vm.h"
+#include "userfn.h"
 
-constexpr const char USERFN_NAME_PREFIX[] = "morpho_userfn_";
-constexpr const char USERFNOBJ_NAME_SUFFIX[] = "_wrapperstruct";
 
 namespace runtime {
 	// If the function name exposed to buildit will be the same as the one appearing in transpiled code,
@@ -35,9 +33,7 @@ namespace runtime {
 	#undef DECL_RUNTIME_FN
 }
 
-std::string get_mangled_fn_name(const userfn_sig &sig, bool genericize=false);
-std::string get_mangled_fnobj_name(const userfn_sig &sig, bool genericize=false);
-std::string generate_fnobj_definition(const userfn_sig &sig, bool genericize=false);
+std::string generate_fnobj_definition(const userfn_details &deets, bool genericize=false);
 
 void print_wrapper_code(std::ostream &oss);
 

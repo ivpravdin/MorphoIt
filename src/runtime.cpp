@@ -33,33 +33,13 @@ namespace runtime {
 	#undef RUNTIME_FN
 }
 
-std::string get_mangled_fn_name(const userfn_sig &sig, bool genericize) {
-    std::string name = std::string(USERFN_NAME_PREFIX);
-    if (MORPHO_ISOBJECT(sig.objfn->name)) {
-        name += MORPHO_GETCSTRING(sig.objfn->name);
-        name += "_";
-    }
-    name += std::to_string((uintptr_t) sig.objfn);
 
-	// use genericize to force to get generic name, even if is a specialized fn
-	if (!genericize && sig.argtypes.has_value()) {
-		for (pe_t_note t : sig.argtypes.value()) {
-			name += "_t" + std::to_string(t);
-		}
-	}
-    return std::move(name);
-}
-
-std::string get_mangled_fnobj_name(const userfn_sig &sig, bool genericize) {
-    return get_mangled_fn_name(sig, genericize) + USERFNOBJ_NAME_SUFFIX;
-}
-
-std::string generate_fnobj_definition(const userfn_sig &sig, bool genericize) {
-	return "const struct userfn_object "
-		+ get_mangled_fnobj_name(sig, genericize)
+std::string generate_fnobj_definition(const userfn_details &deets, bool genericize) {
+	return "const struct literal_userfn_object "
+		+ deets.get_runtime_fnobj_name(genericize)
 		+ " = { "
-		+ ".type = " + std::to_string(objectfunctiontype) + ", " +
-		+ ".fn = " + get_mangled_fn_name(sig, genericize)
+		+ ".type = " + std::to_string(objectfunctiontype) + ", "
+		+ ".fn = " + deets.get_runtime_fn_name(genericize)
 		+ " };\n";
 }
 
