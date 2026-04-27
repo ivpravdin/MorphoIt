@@ -58,7 +58,7 @@ void or_backtrack(userfn_sig thisfn_sig, const varray_instruction *code, userfn_
         std::cerr << "[backtracking...]\n";
         // main is never recursive so we know this will never be a call to main
         or_backtrack(specialized_sig, code, userfn_asts, false); 
-        or_backtrack(thisfn_sig, code, userfn_asts, false); 
+        or_backtrack(thisfn_sig, code, userfn_asts, is_main); 
     }
 }
 

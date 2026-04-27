@@ -179,10 +179,14 @@ extern inline value op_not(value left) {
 }
 
 extern inline value call(value func, int nargs, value *args) {
+    if (!MORPHO_ISOBJECT(func)) exit(EXIT_FAILURE);
 
-    if (MORPHO_ISMETAFUNCTION(func)) {
-        metafunction_resolve(MORPHO_GETMETAFUNCTION(func), nargs, args + 1, NULL, &func);
-    } 
+    while (MORPHO_ISMETAFUNCTION(func)) {
+        value tmp;
+        metafunction_resolve(MORPHO_GETMETAFUNCTION(func), nargs, args + 1, NULL, &tmp);
+        func = tmp;
+    }
+
     if (MORPHO_ISBUILTINFUNCTION(func)) {
         objectbuiltinfunction *f = MORPHO_GETBUILTINFUNCTION(func);
         return (f->function)(NULL, nargs, args);
@@ -192,7 +196,8 @@ extern inline value call(value func, int nargs, value *args) {
         literal_userfn f = ((struct literal_userfn_object *) MORPHO_GETOBJECT(func))->fn;
         return f(args);
     }
-    printf("Attempted to call function of type: %lld != %d", MORPHO_GETTYPE(func), OBJECT_BUILTINFUNCTION);
+    fprintf(stderr, "fn %d; bfn %d; mfn %d\n", OBJECT_FUNCTION, OBJECT_BUILTINFUNCTION, OBJECT_METAFUNCTION);
+    fprintf(stderr, "Attempted to call function of type %lld", MORPHO_GETOBJECTTYPE(func));
     exit(EXIT_FAILURE);
 }
 

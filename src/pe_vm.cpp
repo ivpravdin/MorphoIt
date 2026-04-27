@@ -179,6 +179,9 @@ dyn_var<value> morpho_vm(
             thisfn_deets.get_runtime_fnobj_name(true)
         );
         reg[0] = X_MORPHO_OBJECT(&runtime_fn_obj);
+    } else {
+        dyn_var<literal_userfn> morpho_initialize = builder::with_name("morpho_initialize");
+        morpho_initialize();
     }
 
 
@@ -206,7 +209,7 @@ dyn_var<value> morpho_vm(
 
                     // this is less solid than I thought: name can be the emptystring, so there could be naming conflicts here
                     dyn_var<const struct literal_userfn_object> runtime_fn_obj = builder::with_name(
-                            userfn_sig { .objfn = morpho_fn }.get_mangled_fn_name(false)
+                            userfn_sig { .objfn = morpho_fn }.get_mangled_fnobj_name(true)
                     );
                     reg[a] = X_MORPHO_OBJECT(&runtime_fn_obj);
                     reg_stat[a] = thisfn->konst.data[bx];

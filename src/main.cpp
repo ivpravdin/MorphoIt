@@ -150,9 +150,9 @@ int main(int argc, char* argv[]) {
 
     std::cerr << "[COMPILING]\n";
     void* lib = compile_and_load_lib(TMP_C_FILE);
-    auto main_morpho = (int (*)()) dlsym(lib, PE_GLOBALFN_NAME);
+    literal_userfn main_morpho = (literal_userfn) dlsym(lib, PE_GLOBALFN_NAME);
     std::cerr << "[RUNNING]\n";
-    int result = main_morpho();
+    int result = main_morpho(NULL);
     //std::cout << "Program exited with code " << result << std::endl;
 
 

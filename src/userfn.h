@@ -36,6 +36,10 @@ struct userfn_sig {
         }
         return std::move(name);
     }
+
+    std::string get_mangled_fnobj_name(bool genericize) const {
+        return this->get_mangled_fn_name(genericize) + USERFNOBJ_NAME_SUFFIX;
+    }
 };
 
 // I'm doing this as a class ironically for readability. So it makes more sense
