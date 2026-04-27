@@ -216,6 +216,7 @@ dyn_var<value> morpho_vm(
                     // constant table!" I think that's perfect
                     // aside from any objects types want to statically eval
                     reg[a] = thisfn->konst.data[bx];
+                    reg_stat[a] = MORPHO_NIL;
                 }
                 reg_type[a] = gettypeannotation(thisfn->konst.data[bx]);
                 // std::cerr << "Loaded const of type: " << reg_type[a] << "\ninstructions";
@@ -357,6 +358,7 @@ dyn_var<value> morpho_vm(
                     global_type[i] = pe_t_note::UNKNOWN;
                 }
                 // for now function calls will be completely opaque
+                reg_stat[a] = MORPHO_NIL;
                 break;
             case OP_RETURN:
                 if (a>0) {
@@ -372,6 +374,7 @@ dyn_var<value> morpho_vm(
                 break;
             case OP_LGL: // LGL
                 reg[a]      = globals[bx];
+                reg_stat[a] = MORPHO_NIL;
                 reg_type[a] = global_type[bx];
                 break;
             case OP_SGL: // SGL

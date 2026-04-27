@@ -14,7 +14,8 @@ std::string gettypename(pe_t_note t) {
         case pe_t_note::OBJECT: return "obj"; break;
         case pe_t_note::FLOAT: return "float"; break;
         case pe_t_note::UNKNOWN: return "unknown"; break;
-        default: return "ERROR!";
+        default: return "!ERROR!"; // this wont compile if it shows up in a signature, so we can track it down
+        // TODO: replace above with like an assert or something more humane
     }
 }
 pe_t_note gettypeannotation(value v) {

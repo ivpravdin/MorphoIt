@@ -50,29 +50,30 @@ void generate_userfn_ast(
     fprintf(stderr, "[...%s inserted!]\n", deets.runtime_name.c_str());
 }
 
+void or_backtrack(userfn_sig thisfn_sig, const varray_instruction *code, userfn_map &userfn_asts, bool is_main) {
+    try {
+        generate_userfn_ast(thisfn_sig, code, userfn_asts, is_main);
+        return;
+    } catch (const userfn_sig &specialized_sig) {
+        std::cerr << "[backtracking...]\n";
+        // main is never recursive so we know this will never be a call to main
+        or_backtrack(specialized_sig, code, userfn_asts, false); 
+        or_backtrack(thisfn_sig, code, userfn_asts, false); 
+    }
+}
+
 void generate_all_userfn_asts(
-    const objectfunction *toplevel_fnobj,
+    const objectfunction *globalfn_obj,
     const varray_instruction *code,
     userfn_map &userfn_asts
 ) {
-    const varray_value const_table = toplevel_fnobj->konst;
+    const varray_value const_table = globalfn_obj->konst;
     size_t nconsts = const_table.count;
-    userfn_sig toplevel_sig = { .objfn = toplevel_fnobj };
+    userfn_sig toplevel_sig = { .objfn = globalfn_obj };
 
     size_t i = 0;
-    while (true) {
-        fprintf(stderr, "[%d'th try on toplevel function...]\n", ++i);
-        try {
-            generate_userfn_ast(toplevel_sig, code, userfn_asts, true);
-            fprintf(stderr, "[Toplevel section finished!]\n");
-            break;
-        } catch (const userfn_sig &specialized_sig) {
-            std::cerr << "[backtracking...]\n";
-            // do the specialized called fn first
-            // reason to organize this to do this first is to get return type
-            generate_userfn_ast(specialized_sig, code, userfn_asts, false);
-        }
-    }
+    or_backtrack(userfn_sig { .objfn = globalfn_obj }, code, userfn_asts, true);
+    fprintf(stderr, "[Toplevel section finished!]\n");
 
 
     std::cerr << "[Subfunctions...]\n";
@@ -80,16 +81,6 @@ void generate_all_userfn_asts(
         if (!MORPHO_ISFUNCTION(const_table.data[i])) continue;
 
         userfn_sig sig = { .objfn = MORPHO_GETFUNCTION(const_table.data[i]) };
-        size_t j = 0;
-        while (true) {
-            fprintf(stderr, "[%d'th try on subfn...]\n", ++j);
-            try {
-                generate_userfn_ast(sig, code, userfn_asts, false);
-                break;
-            } catch (userfn_sig &specialized_sig) {
-                std::cerr << "[backtracking...]\n";
-                generate_userfn_ast(specialized_sig, code, userfn_asts, false);
-            }
-        }
+        or_backtrack(sig, code, userfn_asts, false);
     }
 }
