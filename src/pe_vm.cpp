@@ -66,7 +66,7 @@ dyn_var<value> op_mul(dyn_var<value> lhs, dyn_var<value> rhs, pe_t_note lh_t, pe
         }
     }
 
-    return runtime::op_add(lhs, rhs);
+    return runtime::op_mul(lhs, rhs);
 }
 
 dyn_var<value> op_div(dyn_var<value> lhs, dyn_var<value> rhs, pe_t_note lh_t, pe_t_note rh_t) {
