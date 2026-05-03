@@ -88,6 +88,7 @@ dyn_var<value> morpho_vm_rec(
                     // constant table!" I think that's perfect
                     // aside from any objects types want to statically eval
                     reg[a] = globalfn->konst.data[bx];
+                    reg_stat[a] = MORPHO_NIL;
                 }
                 break;
 
